@@ -1,14 +1,22 @@
+import contextlib
+
 import xarray as xr
 import numpy as np
 
 
 def _create_profile(z, dens, u=None, v=None, w=None, lat=None, lon=None, date=None):
-    u = u or np.zeros(len(z))
-    v = v or np.zeros(len(z))
-    w = w or np.zeros(len(z))
-    date = date or np.array(np.nan)
-    lat = lat or np.nan
-    lon = lon or np.nan
+    if u is None:
+        u = np.zeros(len(z))
+    if v is None:
+        v = np.zeros(len(z))
+    if w is None:
+        w = np.zeros(len(z))
+    if date is None:
+        date = np.array(np.nan)
+    if lat is None:
+        lat = np.nan
+    if lon is None:
+        lon = np.nan
 
     return xr.Dataset(
         data_vars=dict(
@@ -52,6 +60,7 @@ def _create_profile(z, dens, u=None, v=None, w=None, lat=None, lon=None, date=No
                 attrs=dict(
                     standard_name='depth',
                     units='m',
+                    positive='down',
                 )
             ),
             lon=xr.Variable(
@@ -105,37 +114,132 @@ class ModeldataRoms(Modeldata):
     def __init__(self, file_names):
         super().__init__()
         self.filetab = _filetab_create(file_names)
-        self.horizontal_transform = _roms_horizontal_transform(file_names[0])
+        self._horizontal_transform = _roms_horizontal_transform(file_names[0])
 
     def profile(self, lat, lon, date):
+        if isinstance(date, str):
+            date = np.datetime64(date)
 
-        pass
+        file_name, t = self._find_date(date)
+        eta, xi = self.horizontal_transform(lat, lon)
+        j, i = np.round([eta, xi]).astype(int)
 
-    def _from_date_to_index(self, date):
-        dates = self.filetab.time_val.values
-        i = np.searchsorted(dates, date)
-        row = self.filetab.iloc[i]
-        return row.file_index, row.time_index
+        with _roms_open(file_name) as dset:
+            ddset = dset.isel(
+                ocean_time=t,
+                eta_rho=j,
+                xi_rho=i,
+                eta_u=j,
+                xi_u=range(i-1, i+1),
+                eta_v=range(j-1, j+1),
+                xi_v=i,
+            )
+
+            u = np.flip(ddset.u.mean(dim='xi_u').values)
+            v = np.flip(ddset.v.mean(dim='eta_v').values)
+            w = np.zeros_like(u)
+            salt = np.flip(ddset.salt.values)
+            temp = np.flip(ddset.temp.values)
+            z = -np.flip(_roms_get_zrho(ddset))
+
+        dens = 1026 - 1.6e-1 * temp + 7.7e-1 * salt
+
+        return _create_profile(z, dens, u, v, w, lat, lon, date)
+
+    def horizontal_transform(self, lat, lon):
+        return self._horizontal_transform(lat, lon)
+
+    def _find_date(self, date):
+        row_idx = np.searchsorted(self.filetab.time_val.values, date)
+        file_name = self.filetab.iloc[row_idx].file_name
+        time_idx = self.filetab.iloc[row_idx].time_index
+        return file_name, time_idx
+
+
+@contextlib.contextmanager
+def _roms_open(file_name, *args, **kwargs):
+    try:
+        with xr.open_dataset(file_name, *args, **kwargs) as dset:
+            yield dset
+    except ValueError:
+        yield file_name
+
+
+def _roms_get_zrho(dset):
+    h = dset.h.values.ravel()
+    hc = dset.hc.values
+    c = dset.Cs_r.values
+    vt = dset.Vtransform.values
+
+    s = -1.0 + (0.5 + np.arange(len(c))) / len(c)
+    out_shape = (len(c), ) + dset.h.shape
+
+    if vt == 1:  # Default transform by Song and Haidvogel
+        A = hc * (s - c)[:, None]
+        B = np.outer(c, h)
+        z = A + B
+
+    elif vt == 2:  # New transform by Shchepetkin
+        n = hc * s[:, None] + np.outer(c, h)
+        d = 1.0 + hc / h
+        z = n / d
+
+    else:
+        raise ValueError("Unknown Vtransform")
+
+    return xr.DataArray(
+        data=z.reshape(out_shape),
+        dims=dset.Cs_r.dims + dset.h.dims,
+        name="z_rho",
+    )
+
+
+def sdepth(H, Hc, C, stagger="rho", Vtransform=1):
+    H = np.asarray(H)
+    Hshape = H.shape  # Save the shape of H
+    H = H.ravel()  # and make H 1D for easy shape maniplation
+    C = np.asarray(C)
+    N = len(C)
+    outshape = (N,) + Hshape  # Shape of output
+    if stagger == "rho":
+        S = -1.0 + (0.5 + np.arange(N)) / N  # Unstretched coordinates
+    elif stagger == "w":
+        S = np.linspace(-1.0, 0.0, N)
+    else:
+        raise ValueError("stagger must be 'rho' or 'w'")
+
+    if Vtransform == 1:  # Default transform by Song and Haidvogel
+        A = Hc * (S - C)[:, None]
+        B = np.outer(C, H)
+        return (A + B).reshape(outshape)
+
+    if Vtransform == 2:  # New transform by Shchepetkin
+        N = Hc * S[:, None] + np.outer(C, H)
+        D = 1.0 + Hc / H
+        return (N / D).reshape(outshape)
+
+    # else:
+    raise ValueError("Unknown Vtransform")
 
 
 def _roms_horizontal_transform(file_name):
     from .utils import bilin_inv
 
-    with xr.open_dataset(file_name) as dset:
+    with _roms_open(file_name) as dset:
         lat_rho = dset.variables['lat_rho'].values
         lon_rho = dset.variables['lon_rho'].values
 
     previous_latlon = (None, None)
-    previous_xy = [None, None]
+    previous_yx = [None, None]
 
-    def latlon_to_xy(lat, lon):
+    def latlon_to_yx(lat, lon):
         if previous_latlon != (lat, lon):
-            x, y = bilin_inv(lat, lon, lat_rho, lon_rho)
-            previous_xy[0] = x
-            previous_xy[1] = y
-        return previous_xy
+            y, x = bilin_inv(lat, lon, lat_rho, lon_rho)
+            previous_yx[0] = y
+            previous_yx[1] = x
+        return previous_yx
 
-    return latlon_to_xy
+    return latlon_to_yx
 
 
 def _filetab_create(file_names):
@@ -149,16 +253,22 @@ def _filetab_create(file_names):
     time_index_series = []
     time_val_series = []
     for i, fname in enumerate(file_names):
-        with xr.open_dataset(fname) as dset:
+        with _roms_open(fname) as dset:
             t = dset.variables['ocean_time'].values.astype('datetime64[us]').tolist()
         time_val_series += t
         time_index_series += list(range(len(t)))
         file_name_series += [fname] * len(t)
         file_index_series += [i] * len(t)
 
+    # file_name_series may be an object list instead of string list
+    # We convert it to numpy array in a safe manner
+    file_name_series_numpy = np.array([None] * len(file_name_series), dtype=object)
+    for i, fname in enumerate(file_name_series):
+        file_name_series_numpy[i] = fname
+
     df = pd.DataFrame(
         dict(
-            file_name=file_name_series,
+            file_name=file_name_series_numpy,
             file_index=file_index_series,
             time_val=time_val_series,
             time_index=time_index_series,
