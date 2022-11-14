@@ -23,9 +23,28 @@ jobs:
           name: "Run pytest"
           command: pytest
 
+  publisher:
+    executor: python/default
+    # docker:
+    # - image: continuumio/miniconda3
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: "Build package"
+          command: python -m build
+      - run:
+          name: "Upload using twine"
+          command: twine upload dist/*
+
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   main:
     jobs:
       - tester
+      - publisher:
+          filters:
+            branches:
+              only: release
