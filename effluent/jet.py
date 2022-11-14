@@ -7,6 +7,47 @@ def pipe_discharge():
     return jet(None, None)
 
 
+def pipe_discharge_derivatives(b, u, v, w, rho, ua, va, wa, rhoa):
+    g = 9.81
+
+    # Decompose ambient flow into a normal part and tangential part
+    udiff = ua - u
+    vdiff = va - v
+    wdiff = wa - w
+    uvw_abs = np.sqrt(u*u + v*v + w*w)
+    uvw_diff_abs = np.sqrt(udiff*udiff + vdiff*vdiff + wdiff*wdiff)
+    uvw_diff_tang = (udiff * u + vdiff * v + wdiff * w) / uvw_abs
+    uvw_diff_norm = np.sqrt(uvw_diff_abs**2 - uvw_diff_tang**2)
+
+    # Entrainment velocity
+    dbdt = 0.17 * np.abs(uvw_diff_tang) + 0.34 * np.abs(uvw_diff_norm)
+
+    # Conservation of mass
+    rhodiff = rhoa - rho
+    expansion = (2/b) * dbdt
+    drho_dt = expansion * rhodiff
+
+    # Conservation of momentum
+    coeff = expansion * rhoa / rho
+    dudt = coeff * udiff
+    dvdt = coeff * vdiff
+    dwdt = coeff * wdiff + (rhoa / rho - 1) * g
+
+    return dbdt, dudt, dvdt, dwdt, drho_dt
+
+
+def pipe_discharge_diagnostics(b, u, v, w, rho, u0, r0, rho0):
+    bg = b / np.sqrt(2)
+    bc = bg * 1.2
+    cm = (r0 / bc) ** 2 * (u / u0)
+    um = 2 * u
+    return dict(
+        cross_section_area=np.pi*b**2,
+        centerline_dilution=cm,
+        dilution_profile=lambda d: cm * np.exp(-(d*d)/(bc*bc))
+    )
+
+
 def pipe_discharge_single_timestep(
         dt, t, m, c, rho, u, v, w, h, b, x, y, z, ua, va, rho_a):
     """
@@ -32,6 +73,7 @@ def pipe_discharge_single_timestep(
     g = 9.81  # Acceleration of gravity
 
     t_new = t + dt
+
 
     # Compute entrainment
     # TODO: Replace this simplified model with a more complete one
