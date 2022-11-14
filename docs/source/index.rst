@@ -76,12 +76,14 @@ setup. A samle config file is shown below:
     file: out.nc
     frequency: 3600  # Output frequency [s]
 
-Other input formats are also available. See the rest of the documentation for
-details.
+Other input and output formats are also available. See the rest of the
+documentation for details.
 
 Documentation
 =============
 .. toctree::
    :maxdepth: 2
 
-   algorithm
+   algo
+   input
+   output
