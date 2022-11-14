@@ -31,6 +31,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "Install prerequisites"
+          command: pip install twine build
+      - run:
           name: "Build package"
           command: python -m build
       - run:
@@ -43,7 +46,10 @@ jobs:
 workflows:
   main:
     jobs:
-      - tester
+      - tester:
+          filters:
+            branches:
+              ignore: release
       - publisher:
           filters:
             branches:
