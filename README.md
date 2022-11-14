@@ -18,14 +18,14 @@ these analyses are conducted in post-processing stages using other packages.
 
 The package is installed using pip:
 
-  pip install effluent
+    pip install effluent
   
 
 # Usage
 
 The software is invoked from the command line as
 
-  python -m effluent config.yaml
+    python -m effluent config.yaml
 
 where `config.yaml` is the configuration file specifying the simulation
 setup.
