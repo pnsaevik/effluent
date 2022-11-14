@@ -1,5 +1,5 @@
 from datetime import datetime
-import effluent
+from ...effluent import __version__
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -27,7 +27,7 @@ author = 'Pål Næverlid Sævik'
 source_suffix = '.rst'
 
 # The full version, including alpha/beta/rc tags
-release = effluent.__version__
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
