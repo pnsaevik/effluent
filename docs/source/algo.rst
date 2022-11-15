@@ -128,7 +128,25 @@ variables are computed from the primary variables.
 :math:`R`       Radius of the computational element
 ==============  =============================================================
 
+Reformulated equations below:
 
+**Change of area, by definition**
+
+.. math ::
+
+    \frac{1}{A} \frac{dA}{dt} = \frac{2}{b} \frac{db}{dt}
+
+**Conservation of mass**
+
+.. math ::
+
+    \frac{d\rho}{dt} = \frac{1}{A} \frac{dA}{dt} (\rho_a - \rho)
+
+**Conservation of momentum:**
+
+.. math ::
+
+    \frac{d\mathbf{u}}{dt} = \frac{1}{A} \frac{dA}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
 
 Bibliography
 ===================
