@@ -180,12 +180,33 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Write variables
     for name, xr_var in xr_dset.variables.items():
-        nc_var = nc_dset.createVariable(name, xr_var.dtype, xr_var.dims)
+        nc_var = nc_dset.createVariable(
+            varname=name,
+            datatype=xr_var.dtype,
+            dimensions=xr_var.dims,
+            fill_value=False,
+        )
         nc_var[:] = xr_var.values
         nc_var.setncatts(xr_var.attrs)
 
     # Write dataset attributes
     nc_dset.setncatts(xr_dset.attrs)
+
+
+def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+    unlim_dims = [k for k, v in nc_dset.dimensions.items() if v.isunlimited()]
+    unlim_dim = unlim_dims[0] if len(unlim_dims) > 0 else None
+    unlim_vars = [k for k, v in xr_dset.variables.items() if v.dims[0] == unlim_dim]
+
+    num_old_items = nc_dset.dimensions[unlim_dim].size
+    num_new_items = xr_dset.dims.get(unlim_dim, 0)
+    num_items = num_old_items + num_new_items
+
+    # Append data
+    for name in unlim_vars:
+        xr_var = xr_dset[name]
+        nc_var = nc_dset.variables[name]
+        nc_var[num_old_items:num_items] = xr_var.values
 
 
 class Solver:
