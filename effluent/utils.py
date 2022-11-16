@@ -1,8 +1,8 @@
 import numpy as np
 
 
-def xr_to_csv(darr, csv_stream):
-    df = darr.to_dataframe()
+def xr_to_csv(dset, csv_stream):
+    df = dset.to_dataframe()
     df.to_csv(csv_stream, line_terminator='\n')
 
 
