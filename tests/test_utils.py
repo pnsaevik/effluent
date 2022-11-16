@@ -5,6 +5,7 @@ import xarray as xr
 
 class Test_xr_to_csv:
     def test_can_convert_twodim_array(self):
+        # Create test data
         darr = xr.DataArray(
             data=[[1, 2, 3], [4, 5, 6]],
             coords=dict(
@@ -14,12 +15,39 @@ class Test_xr_to_csv:
             dims=('outer', 'inner'),
             name='mydata',
         )
-        txt = utils.xr_to_csv(darr)
-        assert txt == (
+
+        # Convert to csv
+        from io import StringIO
+        buf = StringIO()
+        utils.xr_to_csv(darr, buf)
+
+        # Test result
+        assert buf.getvalue() == (
             'outer,inner,mydata\n'
             '10,7,1\n10,8,2\n10,9,3\n'
             '11,7,4\n11,8,5\n11,9,6\n'
         )
+
+
+class Test_csv_to_xr:
+    def test_can_convert_twodim_data(self):
+        # Create test data
+        from io import StringIO
+        buf = StringIO(
+            'outer,inner,mydata\n'
+            '10,7,1\n10,8,2\n10,9,3\n'
+            '11,7,4\n11,8,5\n11,9,6\n'
+        )
+        buf.seek(0)
+
+        # Convert to xarray.DataArray
+        darr = utils.csv_to_xr(buf)
+
+        assert darr.name == 'mydata'
+        assert darr.dims == ('outer', 'inner')
+        assert darr.outer.values.tolist() == [10, 11]
+        assert darr.inner.values.tolist() == [7, 8, 9]
+        assert darr.values.tolist() == [[1, 2, 3], [4, 5, 6]]
 
 
 class Test_bilin_inv:

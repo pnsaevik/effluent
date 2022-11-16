@@ -1,14 +1,21 @@
 import numpy as np
 
 
-def xr_to_csv(darr):
+def xr_to_csv(darr, csv_stream):
     df = darr.to_dataframe()
+    df.to_csv(csv_stream, line_terminator='\n')
 
-    from io import StringIO
-    buf = StringIO()
-    df.to_csv(buf, line_terminator='\n')
 
-    return buf.getvalue()
+def csv_to_xr(csv_stream):
+    import pandas as pd
+    import xarray as xr
+
+    df = pd.read_csv(csv_stream)
+    idx_cols = df.columns.to_list()[:-1]
+    df = df.set_index(idx_cols)
+
+    darr = xr.DataArray.from_series(df[df.columns[-1]])
+    return darr
 
 
 def bilin_inv(f, g, F, G, maxiter=7, tol=1.0e-7):
