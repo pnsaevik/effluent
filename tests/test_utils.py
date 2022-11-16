@@ -1,5 +1,25 @@
 from effluent import utils
 import numpy as np
+import xarray as xr
+
+
+class Test_xr_to_csv:
+    def test_can_convert_twodim_array(self):
+        darr = xr.DataArray(
+            data=[[1, 2, 3], [4, 5, 6]],
+            coords=dict(
+                inner=[7, 8, 9],
+                outer=[10, 11],
+            ),
+            dims=('outer', 'inner'),
+            name='mydata',
+        )
+        txt = utils.xr_to_csv(darr)
+        assert txt == (
+            'outer,inner,mydata\n'
+            '10,7,1\n10,8,2\n10,9,3\n'
+            '11,7,4\n11,8,5\n11,9,6\n'
+        )
 
 
 class Test_bilin_inv:

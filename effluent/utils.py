@@ -1,6 +1,16 @@
 import numpy as np
 
 
+def xr_to_csv(darr):
+    df = darr.to_dataframe()
+
+    from io import StringIO
+    buf = StringIO()
+    df.to_csv(buf, line_terminator='\n')
+
+    return buf.getvalue()
+
+
 def bilin_inv(f, g, F, G, maxiter=7, tol=1.0e-7):
     """Inverse bilinear interpolation
 
