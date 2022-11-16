@@ -16,7 +16,7 @@ class Example:
         os.chdir(self.path)
         conf_fname = self.path / 'config.yaml'
         result_fname = Path(effluent.run(conf_fname))
-        expected_fname = self.path / 'expected.nc'
+        expected_fname = self.path / ('expected' + result_fname.suffix)
         if not expected_fname.exists():
             import shutil
             shutil.copyfile(result_fname, expected_fname)
