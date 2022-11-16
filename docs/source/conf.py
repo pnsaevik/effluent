@@ -25,8 +25,19 @@ copyright = f'{datetime.now().year}, Pål Næverlid Sævik'
 author = 'Pål Næverlid Sævik'
 source_suffix = '.rst'
 
+
 # The full version, including alpha/beta/rc tags
-release = "1.0"
+def getversion():
+    from pathlib import Path
+    vfile = Path(__file__).parent.parent.parent / 'effluent' / '__init__.py'
+    with open(vfile, 'r', encoding='utf-8') as fp:
+        lines = fp.readlines()
+
+    version = next(ln[15:-2] for ln in lines if ln.startswith('__version__ = "'))
+    return version
+
+
+release = getversion()
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,6 +46,7 @@ release = "1.0"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.mathjax',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
