@@ -182,6 +182,7 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     for name, xr_var in xr_dset.variables.items():
         nc_var = nc_dset.createVariable(name, xr_var.dtype, xr_var.dims)
         nc_var[:] = xr_var.values
+        nc_var.setncatts(xr_var.attrs)
 
 
 class Solver:
