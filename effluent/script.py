@@ -13,7 +13,7 @@ def run(*argv):
 def init_logger(loglevel=None):
     import logging
     if loglevel is None:
-        loglevel = logging.INFO
+        loglevel = logging.DEBUG
 
     package_name = str(__name__).split('.', maxsplit=1)[0]
     package_logger = logging.getLogger(package_name)

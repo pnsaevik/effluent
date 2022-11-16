@@ -1,6 +1,10 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import xarray as xr
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Model:
