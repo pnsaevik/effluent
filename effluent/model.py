@@ -3,6 +3,7 @@ from scipy.integrate import solve_ivp
 import xarray as xr
 import logging
 from pathlib import Path
+import netCDF4 as nc
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +167,21 @@ class OutputNC(Output):
         r = result
         r.coords['release_time'].attrs['long_name'] = 'time of release'
         r.coords['release_time'].attrs['units'] = 's'
+
+
+def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+    unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
+
+    # Write dimensions
+    for name, size in xr_dset.dims.items():
+        if name in unlimited_dims:
+            size = None
+        nc_dset.createDimension(name, size)
+
+    # Write variables
+    for name, xr_var in xr_dset.variables.items():
+        nc_var = nc_dset.createVariable(name, xr_var.dtype, xr_var.dims)
+        nc_var[:] = xr_var.values
 
 
 class Solver:
