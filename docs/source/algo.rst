@@ -58,7 +58,7 @@ the normal (across-jet) direction. The constants :math:`\beta_1` and
 Conservation of mass
 ====================
 
-Mass increase inside the computational element is due to entrainment of ambient
+Mass increase inside the computational element due to entrainment of ambient
 water masses. This can be expressed as
 
 .. math ::
