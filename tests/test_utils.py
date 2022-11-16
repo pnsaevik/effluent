@@ -28,24 +28,26 @@ class Test_xr_to_csv:
 
 
 class Test_csv_to_xr:
-    def test_can_convert_twodim_data(self):
+    def test_can_convert_multiple_twodim_data(self):
         # Create test data
         from io import StringIO
         buf = StringIO(
-            'outer,inner,mydata\n'
-            '10,7,1\n10,8,2\n10,9,3\n'
-            '11,7,4\n11,8,5\n11,9,6\n'
+            'outer,inner,first,second\n'
+            '200,100,1,10\n200,101,2,11\n200,102,3,12\n'
+            '201,100,4,13\n201,101,5,14\n201,102,6,15\n'
         )
         buf.seek(0)
 
         # Convert to xarray.DataArray
-        darr = utils.csv_to_xr(buf)
+        index_cols = ['outer', 'inner']
+        dset = utils.csv_to_xr(buf, index_cols)
 
-        assert darr.name == 'mydata'
-        assert darr.dims == ('outer', 'inner')
-        assert darr.outer.values.tolist() == [10, 11]
-        assert darr.inner.values.tolist() == [7, 8, 9]
-        assert darr.values.tolist() == [[1, 2, 3], [4, 5, 6]]
+        assert list(dset.data_vars) == ['first', 'second']
+        assert list(dset.coords) == ['outer', 'inner']
+        assert dset.outer.values.tolist() == [200, 201]
+        assert dset.inner.values.tolist() == [100, 101, 102]
+        assert dset.first.values.tolist() == [[1, 2, 3], [4, 5, 6]]
+        assert dset.second.values.tolist() == [[10, 11, 12], [13, 14, 15]]
 
 
 class Test_bilin_inv:

@@ -6,16 +6,13 @@ def xr_to_csv(dset, csv_stream):
     df.to_csv(csv_stream, line_terminator='\n')
 
 
-def csv_to_xr(csv_stream):
+def csv_to_xr(csv_stream, index_cols):
     import pandas as pd
     import xarray as xr
 
-    df = pd.read_csv(csv_stream)
-    idx_cols = df.columns.to_list()[:-1]
-    df = df.set_index(idx_cols)
-
-    darr = xr.DataArray.from_series(df[df.columns[-1]])
-    return darr
+    df = pd.read_csv(csv_stream, index_col=index_cols)
+    dset = xr.Dataset.from_dataframe(df)
+    return dset
 
 
 def bilin_inv(f, g, F, G, maxiter=7, tol=1.0e-7):
