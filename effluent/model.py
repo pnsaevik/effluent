@@ -184,6 +184,9 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
         nc_var[:] = xr_var.values
         nc_var.setncatts(xr_var.attrs)
 
+    # Write dataset attributes
+    nc_dset.setncatts(xr_dset.attrs)
+
 
 class Solver:
     def __init__(self, resolution, stagnation, frequency, stop):

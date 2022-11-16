@@ -30,3 +30,21 @@ class Test_write_xr_to_nc:
         )
         model.write_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset.variables['a'].units == xr_dset['a'].attrs['units']
+
+    def test_writes_dataset_attrs(self):
+        nc_dset = nc.Dataset(filename='writes_dset_attrs', mode='w', diskless=True)
+        xr_dset = xr.Dataset(
+            data_vars=dict(a=xr.Variable('x', np.arange(5))),
+            attrs=dict(date='2000-01-01'),
+        )
+        model.write_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.date == xr_dset.attrs['date']
+
+    def test_writes_unlimited_dims(self):
+        nc_dset = nc.Dataset(filename='writes_unlim_dims', mode='w', diskless=True)
+        xr_dset = xr.Dataset(
+            data_vars=dict(a=xr.Variable('x', np.arange(5))),
+        )
+        xr_dset.encoding['unlimited_dims'] = ['x']
+        model.write_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.dimensions['x'].isunlimited()
