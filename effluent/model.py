@@ -84,7 +84,7 @@ class Config:
     def init_modules(self):
         pipe = Pipe(**self.pipe)
         ambient = Ambient(**self.ambient)
-        output = Output.open(**self.output)
+        output = Output.open(**self.output)  # Does not actually open file, just returns context manager
         solver = Solver(**self.solver)
 
         return pipe, ambient, output, solver
@@ -156,15 +156,62 @@ class OutputCSV(Output):
 
 
 class OutputNC(Output):
-    def __init__(self, file):
+    def __init__(self, file, diskless=False):
         self.file = file
+        self.dset = None
+        self._blank_file = True
+        self.diskless = diskless
+
+    def __enter__(self):
+        self.dset = nc.Dataset(filename=self.file, mode='w', diskless=self.diskless)
+        self._blank_file = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        if self.dset is not None:
+            self.dset.close()
+            self.dset = None
+
+    def write(self, time, result):
+        result = result.assign_coords(release_time=time)
+        result = result.expand_dims('release_time')
+        if self._blank_file:
+            self._append_attributes(result)
+            write_xr_to_nc(result, self.dset)
+            self._blank_file = False
+        else:
+            append_xr_to_nc(result, self.dset)
 
     @staticmethod
-    def _append_attributes(result):
+    def _append_attributes(r):
+        r.encoding['unlimited_dims'] = ['release_time']
 
-        result = result.assign_coords(release_time=time)
+        r['x'].attrs['long_name'] = 'centerline x coordinate'
+        r['y'].attrs['long_name'] = 'centerline y coordinate'
+        r['z'].attrs['long_name'] = 'centerline z coordinate'
+        r['u'].attrs['long_name'] = 'velocity in x direction'
+        r['v'].attrs['long_name'] = 'velocity in y direction'
+        r['w'].attrs['long_name'] = 'velocity in z direction'
+        r['density'].attrs['long_name'] = 'mass density of fluid'
+        r['radius'].attrs['long_name'] = 'radius of top hat profile'
+        r['t'].attrs['long_name'] = 'time since release'
 
-        r = result
+        r['x'].attrs['units'] = 'm'
+        r['y'].attrs['units'] = 'm'
+        r['z'].attrs['units'] = 'm'
+        r['u'].attrs['units'] = 'm/s'
+        r['v'].attrs['units'] = 'm/s'
+        r['w'].attrs['units'] = 'm/s'
+        r['density'].attrs['units'] = 'kg/m^3'
+        r['radius'].attrs['units'] = 'm'
+        r['t'].attrs['units'] = 's'
+
+        r['z'].attrs['standard_name'] = 'depth_below_surface'
+        r['z'].attrs['positive'] = 'down'
+
         r.coords['release_time'].attrs['long_name'] = 'time of release'
         r.coords['release_time'].attrs['units'] = 's'
 
@@ -235,38 +282,12 @@ class Solver:
         )
 
         # noinspection PyUnresolvedReferences
-        result_t, result_y = result.t, result.y
+        res_t, res_y = result.t, result.y
 
         # Organize result
-        data_vars = {v: xr.Variable('t', result_y[i]) for i, v in enumerate(varnames)}
-        coords = dict(t=xr.Variable(dims='t', data=result_t))
-
-        data_vars['x'].attrs['long_name'] = 'centerline x coordinate'
-        data_vars['y'].attrs['long_name'] = 'centerline y coordinate'
-        data_vars['z'].attrs['long_name'] = 'centerline z coordinate'
-        data_vars['u'].attrs['long_name'] = 'velocity in x direction'
-        data_vars['v'].attrs['long_name'] = 'velocity in y direction'
-        data_vars['w'].attrs['long_name'] = 'velocity in z direction'
-        data_vars['density'].attrs['long_name'] = 'mass density of fluid'
-        data_vars['radius'].attrs['long_name'] = 'radius of top hat profile'
-        coords['t'].attrs['long_name'] = 'time since release'
-
-        data_vars['x'].attrs['units'] = 'm'
-        data_vars['y'].attrs['units'] = 'm'
-        data_vars['z'].attrs['units'] = 'm'
-        data_vars['u'].attrs['units'] = 'm/s'
-        data_vars['v'].attrs['units'] = 'm/s'
-        data_vars['w'].attrs['units'] = 'm/s'
-        data_vars['density'].attrs['units'] = 'kg/m^3'
-        data_vars['radius'].attrs['units'] = 'm'
-        coords['t'].attrs['units'] = 's'
-
-        data_vars['z'].attrs['standard_name'] = 'depth_below_surface'
-        data_vars['z'].attrs['positive'] = 'down'
-
         dset = xr.Dataset(
-            data_vars=data_vars,
-            coords=coords,
+            data_vars={v: xr.Variable('t', res_y[i]) for i, v in enumerate(varnames)},
+            coords=dict(t=res_t),
         )
 
         return dset

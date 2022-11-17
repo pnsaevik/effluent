@@ -86,3 +86,37 @@ class Test_append_xr_to_nc:
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
         model.append_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
+
+
+class Test_OutputNC:
+    @pytest.fixture()
+    def result(self):
+        return xr.Dataset(
+            data_vars=dict(
+                x=xr.Variable('t', [0, 0]),
+                y=xr.Variable('t', [0, 0]),
+                z=xr.Variable('t', [0, 0]),
+                u=xr.Variable('t', [0, 0]),
+                v=xr.Variable('t', [0, 0]),
+                w=xr.Variable('t', [0, 0]),
+                density=xr.Variable('t', [0, 0]),
+                radius=xr.Variable('t', [0, 0]),
+            ),
+            coords=dict(
+                t=xr.Variable('t', [1000, 2000]),
+            ),
+        )
+
+    def test_can_add_attributes(self, result):
+        from uuid import uuid4
+        with model.OutputNC(uuid4(), diskless=True) as out:
+            out.write(time=0, result=result)
+            assert out.dset.variables['z'].positive == 'down'
+
+    def test_can_append_variables(self, result):
+        from uuid import uuid4
+        with model.OutputNC(uuid4(), diskless=True) as out:
+            out.write(time=0, result=result)
+            out.write(time=1, result=result)
+            rt = out.dset.variables['release_time'][:]
+            assert rt.tolist() == [0, 1]
