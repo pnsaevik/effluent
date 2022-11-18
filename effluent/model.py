@@ -44,6 +44,8 @@ def load_config(fname_or_dict):
     # noinspection PyDictCreation
     conf = {}
 
+    # --- Pipe ---
+
     conf['pipe'] = {}
     conf['pipe']['format'] = 'dict'
     conf['pipe']['time'] = input_conf['pipe']['time']
@@ -53,6 +55,8 @@ def load_config(fname_or_dict):
     conf['pipe']['diam'] = input_conf['pipe']['diam']
     conf['pipe']['depth'] = input_conf['pipe']['depth']
 
+    # --- Ambient ---
+
     conf['ambient'] = {}
     conf['ambient']['format'] = 'dict'
     conf['ambient']['time'] = input_conf['ambient']['time']
@@ -61,13 +65,21 @@ def load_config(fname_or_dict):
     conf['ambient']['crossflow'] = input_conf['ambient']['crossflow']
     conf['ambient']['dens'] = input_conf['ambient']['dens']
 
+    # --- Solver ---
+
+    stagnation = input_conf['output']['stagnation']
+    resolution = input_conf['output']['resolution']
+
     conf['solver'] = {}
-    conf['solver']['resolution'] = input_conf['output']['resolution']
-    conf['solver']['stagnation'] = input_conf['output']['stagnation']
+    conf['solver']['steps'] = np.arange(0, stagnation, resolution)
+
+    # --- Output ---
 
     conf['output'] = {}
     conf['output']['file'] = input_conf['output']['file']
     conf['output']['format'] = Path(input_conf['output']['file']).suffix[1:]
+
+    # --- Time stepper ---
 
     conf['timestepper'] = {}
     conf['timestepper']['frequency'] = input_conf['output']['frequency']
@@ -309,29 +321,36 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
 
 class Solver:
-    def __init__(self, resolution, stagnation):
-        self.resolution = resolution
-        self.stagnation = stagnation
+    def __init__(self, steps):
+        self.steps = steps
 
     @staticmethod
     def from_config(conf):
         return Solver(**conf)
 
     def solve(self, pipe, ambient):
+        ivp = InitialValueProblem(self.steps, pipe, ambient)
+        return ivp.solve()
 
-        # Setup equation
-        varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
-        init = np.zeros(8, dtype='f8')
-        steps = np.arange(0, self.stagnation, self.resolution)
-        fun = lambda t, y: np.zeros_like(y)
 
-        # Solve equation
+class InitialValueProblem:
+    def __init__(self, steps, pipe, ambient):
+        self.steps = steps
+        self.pipe = pipe
+        self.ambient = ambient
+        self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
+        self.method = 'RK45'
+
+    def initial_conditions(self):
+        return np.zeros(8, dtype='f8')
+
+    def solve(self):
         result = solve_ivp(
-            fun=fun,
-            t_span=steps[[0, -1]],
-            y0=init,
-            method='RK45',
-            t_eval=steps,
+            fun=self.odefunc,
+            t_span=self.steps[[0, -1]],
+            y0=self.initial_conditions(),
+            method=self.method,
+            t_eval=self.steps,
             vectorized=True,
         )
 
@@ -339,9 +358,16 @@ class Solver:
         res_t, res_y = result.t, result.y
 
         # Organize result
-        dset = xr.Dataset(
-            data_vars={v: xr.Variable('t', res_y[i]) for i, v in enumerate(varnames)},
-            coords=dict(t=res_t),
-        )
+        data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
+        return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 
-        return dset
+    def odefunc(self, t, y):
+        """
+        ODE function to be solved by scipy methods
+
+        The order of the variables is (x, y, z, u, v, w, rho, R)
+
+        :param t: Vectorized time parameter of shape (n_times, )
+        :param y: Input vector of shape (n_vars, n_times)
+        """
+        return np.zeros_like(y)
