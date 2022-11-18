@@ -10,16 +10,15 @@ logger = logging.getLogger(__name__)
 
 class Model:
     def __init__(self, fname_or_dict):
-        self.conf = Config(fname_or_dict)
-        pipe, ambient, output, solver = self.conf.init_modules()
-        self.pipe = pipe
-        self.ambient = ambient
-        self.output = output
-        self.solver = solver
+        self.conf = load_config(fname_or_dict)
+        self.pipe = Pipe.from_config(self.conf['pipe'])
+        self.ambient = Ambient.from_config(self.conf['ambient'])
+        self.output = Output.from_config(self.conf['output'])
+        self.solver = Solver.from_config(self.conf['solver'])
 
     def run(self):
-        frequency = self.conf.timestepper['frequency']
-        stop = self.conf.timestepper['stop']
+        frequency = self.conf['timestepper']['frequency']
+        stop = self.conf['timestepper']['stop']
         times = np.arange(0, stop + frequency / 2, frequency)
 
         with self.output as output:
@@ -30,88 +29,50 @@ class Model:
                 output.write(time, result)
 
 
-class Config:
-    def __init__(self, fname_or_dict):
-        self.conf = load_config(fname_or_dict)
-        self._solver = None
-        self._output = None
-        self._timestepper = None
-
-    @property
-    def solver(self):
-        if self._solver is None:
-            self._solver = self._generate_solver_conf()
-        return self._solver
-
-    @property
-    def timestepper(self):
-        if self._timestepper is None:
-            self._timestepper = self._generate_timestepper_conf()
-        return self._timestepper
-
-    @property
-    def pipe(self):
-        return {}
-
-    @property
-    def ambient(self):
-        return {}
-
-    @property
-    def output(self):
-        if self._output is None:
-            self._output = self._generate_output_conf()
-        return self._output
-
-    def _generate_solver_conf(self):
-        out_conf = self.conf['output']
-        keys = {'resolution', 'stagnation', 'frequency', 'stop'}
-        conf = {k: v for k, v in out_conf.items() if k in keys}
-        return conf
-
-    def _generate_output_conf(self):
-        out_conf = self.conf['output']
-        keys = {'file'}
-        conf = {k: v for k, v in out_conf.items() if k in keys}
-        return conf
-
-    def _generate_timestepper_conf(self):
-        out_conf = self.conf['output']
-        keys = {'frequency', 'stop'}
-        conf = {k: v for k, v in out_conf.items() if k in keys}
-        return conf
-
-    def init_modules(self):
-        pipe = Pipe(**self.pipe)
-        ambient = Ambient(**self.ambient)
-        output = Output.open(**self.output)  # Does not actually open file, just returns context manager
-        solver = Solver(**self.solver)
-
-        return pipe, ambient, output, solver
-
-
 def load_config(fname_or_dict):
+    """Load and parse input config, and convert to internal config format"""
     if isinstance(fname_or_dict, dict):
-        conf = fname_or_dict
+        input_conf = fname_or_dict
     else:
         import yaml
         with open(fname_or_dict, encoding='utf-8') as fp:
-            conf = yaml.safe_load(fp)
+            input_conf = yaml.safe_load(fp)
+
+    # noinspection PyDictCreation
+    conf = {}
+
+    conf['pipe'] = {}
+
+    conf['ambient'] = {}
+
+    conf['solver'] = {}
+    conf['solver']['resolution'] = input_conf['output']['resolution']
+    conf['solver']['stagnation'] = input_conf['output']['stagnation']
+
+    conf['output'] = {}
+    conf['output']['file'] = input_conf['output']['file']
+    conf['output']['format'] = Path(input_conf['output']['file']).suffix[1:]
+
+    conf['timestepper'] = {}
+    conf['timestepper']['frequency'] = input_conf['output']['frequency']
+    conf['timestepper']['stop'] = input_conf['output']['stop']
 
     return conf
 
 
 class Pipe:
-    def __init__(self):
-        pass
+    @staticmethod
+    def from_config(conf):
+        return Pipe()
 
     def select(self, time):
         return NotImplemented
 
 
 class Ambient:
-    def __init__(self):
-        pass
+    @staticmethod
+    def from_config(conf):
+        return Ambient()
 
     def select(self, time):
         return NotImplemented
@@ -119,11 +80,10 @@ class Ambient:
 
 class Output:
     @staticmethod
-    def open(file):
-        suffix = Path(file).suffix
-        subclasses = {'.csv': OutputCSV, '.nc': OutputNC}
-        subclass = subclasses.get(suffix, subclasses['.nc'])
-        return subclass(file)
+    def from_config(conf):
+        subclasses = {'csv': OutputCSV, 'nc': OutputNC}
+        subclass = subclasses.get(conf.pop('format'), subclasses['nc'])
+        return subclass(**conf)
 
 
 class OutputCSV(Output):
@@ -257,11 +217,13 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
 
 class Solver:
-    def __init__(self, resolution, stagnation, frequency, stop):
-        self.stop = stop
+    def __init__(self, resolution, stagnation):
         self.resolution = resolution
-        self.frequency = frequency
         self.stagnation = stagnation
+
+    @staticmethod
+    def from_config(conf):
+        return Solver(**conf)
 
     def solve(self, pipe, ambient):
 
