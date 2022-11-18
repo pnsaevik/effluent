@@ -209,7 +209,12 @@ class OutputCSV(Output):
         df = df.reset_index().set_index(['release_time', 't'])
 
         # Append result to file, write headers only if blank file
-        df.to_csv(self.dset, line_terminator='\n', header=self._blank_file)
+        df.to_csv(
+            self.dset,
+            line_terminator='\n',
+            header=self._blank_file,
+            float_format='%.10g',
+        )
         self._blank_file = False
 
 
