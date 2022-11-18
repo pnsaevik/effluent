@@ -45,14 +45,14 @@ Using the top hat profile, we can express this relation as
 
 .. math ::
 
-    \frac{dR}{dt} = \beta_1 \Delta u_t + \beta_2 \Delta u_n,
+    \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n,
 
 where :math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
 is the difference between jet velocity and ambient velocity in the tangential
 (along-jet) direction, and :math:`\Delta u_n` is the velocity difference in
-the normal (across-jet) direction. The constants :math:`\beta_1` and
-:math:`\beta_2` are determined by experiments to be
-:math:`\beta_1 = 0.16` and :math:`\beta_2 = 0.4`.
+the normal (across-jet) direction. The constants :math:`\beta_t` and
+:math:`\beta_n` are determined by experiments to be
+:math:`\beta_t = 0.16` and :math:`\beta_n = 0.4`.
 
 
 Conservation of mass

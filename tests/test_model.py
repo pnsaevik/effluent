@@ -204,13 +204,27 @@ class Test_IVP_solve:
         )
 
     @pytest.fixture()
+    def pipe_dset_light(self):
+        return xr.Dataset(dict(depth=100, u=1, w=0, dens=990, diam=0.5))
+
+    @pytest.fixture()
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
         """
         Scenario: Horizontal pipe with constant output, no ambient velocity or
         density difference.
         """
-        steps = np.array([0, 1000, 2000])
+        steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
+        return ivp.solve()
+
+    @pytest.fixture()
+    def result_light_still(self, pipe_dset_light, ambient_dset_still):
+        """
+        Scenario: Horizontal pipe with constant output, no ambient velocity or
+        density difference.
+        """
+        steps = np.array([0, 10, 20])
+        ivp = model.InitialValueProblem(steps, pipe_dset_light, ambient_dset_still)
         return ivp.solve()
 
     @staticmethod
@@ -225,11 +239,23 @@ class Test_IVP_solve:
         assert isinstance(result_horz_still, xr.Dataset)
 
     def test_variables_change_as_expected_when_horz_still(self, result_horz_still):
-        assert self.sign_of_change(result_horz_still, 'x') == 1
-        assert self.sign_of_change(result_horz_still, 'y') == 0
-        assert self.sign_of_change(result_horz_still, 'z') == 0
-        assert self.sign_of_change(result_horz_still, 'u') == -1
-        assert self.sign_of_change(result_horz_still, 'v') == 0
-        assert self.sign_of_change(result_horz_still, 'w') == 0
-        assert self.sign_of_change(result_horz_still, 'density') == 0
-        assert self.sign_of_change(result_horz_still, 'radius') == 1
+        r = result_horz_still
+        assert self.sign_of_change(r, 'x') == 1
+        assert self.sign_of_change(r, 'y') == 0
+        assert self.sign_of_change(r, 'z') == 0
+        assert self.sign_of_change(r, 'u') == -1
+        assert self.sign_of_change(r, 'v') == 0
+        assert self.sign_of_change(r, 'w') == 0
+        assert self.sign_of_change(r, 'density') == 0
+        assert self.sign_of_change(r, 'radius') == 1
+
+    def test_variables_change_as_expected_when_light_still(self, result_light_still):
+        r = result_light_still
+        assert self.sign_of_change(r, 'x') == 1
+        assert self.sign_of_change(r, 'y') == 0
+        assert self.sign_of_change(r, 'z') == -1
+        assert self.sign_of_change(r, 'u') == -1
+        assert self.sign_of_change(r, 'v') == 0
+        assert self.sign_of_change(r, 'w') == -1
+        assert self.sign_of_change(r, 'density') == 1
+        assert self.sign_of_change(r, 'radius') == 1

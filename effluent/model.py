@@ -392,7 +392,8 @@ class InitialValueProblem:
         k_n = 0.5       # Added mass coefficient, normal gravity pull
 
         # Extract ambient velocity and density
-        ambient = self.ambient.interp(depth=z)
+        z_min, z_max = self.ambient.depth[[0, -1]].values
+        ambient = self.ambient.interp(depth=np.clip(z, z_min, z_max))
         u_a = ambient.u.values
         v_a = ambient.v.values
         d_a = ambient.dens.values
@@ -404,9 +405,13 @@ class InitialValueProblem:
         K = k_n * speed_horz2 / speed2 + k_t * speed_vert2 / speed2
 
         # Compute flow difference in tangential and normal direction
+        diff_u = u - u_a
+        diff_v = v - v_a
+        diff_vel2 = diff_u*diff_u + diff_v*diff_v + speed_vert2
         speed = np.sqrt(speed2)
-        u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
-        u_n = np.sqrt(speed2 - u_t * u_t)
+        diff_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        diff_u_n2 = diff_vel2 - diff_u_t * diff_u_t
+        diff_u_n = np.sqrt(np.maximum(0, diff_u_n2))
 
         # Displacement
         ddt_x = u
@@ -414,7 +419,7 @@ class InitialValueProblem:
         ddt_z = w
 
         # Jet expansion rate (entrainment rate)
-        ddt_r = beta_t * u_t + beta_n * u_n
+        ddt_r = beta_t * diff_u_t + beta_n * diff_u_n
 
         # Conservation of mass
         ddt_A_div_A = 2 * ddt_r / r
