@@ -1,9 +1,11 @@
+import io
 import numpy as np
 from scipy.integrate import solve_ivp
 import xarray as xr
 import logging
 from pathlib import Path
 import netCDF4 as nc
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ class Model:
 
 def load_config(fname_or_dict):
     """Load and parse input config, and convert to internal config format"""
+
     if isinstance(fname_or_dict, dict):
         input_conf = fname_or_dict
     else:
@@ -43,9 +46,20 @@ def load_config(fname_or_dict):
 
     conf['pipe'] = {}
     conf['pipe']['format'] = 'dict'
+    conf['pipe']['time'] = input_conf['pipe']['time']
+    conf['pipe']['flow'] = input_conf['pipe']['flow']
+    conf['pipe']['dens'] = input_conf['pipe']['dens']
+    conf['pipe']['decline'] = input_conf['pipe']['decline']
+    conf['pipe']['diam'] = input_conf['pipe']['diam']
+    conf['pipe']['depth'] = input_conf['pipe']['depth']
 
     conf['ambient'] = {}
     conf['ambient']['format'] = 'dict'
+    conf['ambient']['time'] = input_conf['ambient']['time']
+    conf['ambient']['depth'] = input_conf['ambient']['depth']
+    conf['ambient']['coflow'] = input_conf['ambient']['coflow']
+    conf['ambient']['crossflow'] = input_conf['ambient']['crossflow']
+    conf['ambient']['dens'] = input_conf['ambient']['dens']
 
     conf['solver'] = {}
     conf['solver']['resolution'] = input_conf['output']['resolution']
@@ -63,8 +77,8 @@ def load_config(fname_or_dict):
 
 
 class Pipe:
-    def __init__(self):
-        self.dset = xr.Dataset()
+    def __init__(self, dset):
+        self.dset = dset
 
     @staticmethod
     def from_config(conf):
@@ -74,16 +88,37 @@ class Pipe:
         return factory(**conf)
 
     @staticmethod
-    def from_mapping():
-        return Pipe()
+    def from_mapping(time, flow, dens, decline, diam, depth):
+        theta = decline * np.pi / 180
+        time = np.array(time)
+        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        shp = (len(time), )
+        flow = np.broadcast_to(flow, shp)
+        dens = np.broadcast_to(dens, shp)
+        u = flow * np.cos(theta)
+        w = flow * np.sin(theta)
+
+        dset = xr.Dataset(
+            data_vars=dict(
+                u=xr.Variable('time', u),
+                w=xr.Variable('time', w),
+                dens=xr.Variable('time', dens),
+                diam=xr.Variable((), diam),
+            ),
+            coords=dict(
+                time=xr.Variable('time', time),
+                depth=xr.Variable((), depth)
+            ),
+        )
+        return Pipe(dset)
 
     def select(self, time):
-        return self.dset
+        return interp_time(self.dset, time)
 
 
 class Ambient:
-    def __init__(self):
-        self.dset = xr.Dataset()
+    def __init__(self, dset):
+        self.dset = dset
 
     @staticmethod
     def from_config(conf):
@@ -93,11 +128,36 @@ class Ambient:
         return factory(**conf)
 
     @staticmethod
-    def from_mapping():
-        return Ambient()
+    def from_mapping(time, depth, coflow, crossflow, dens):
+        depth = np.array(depth)
+        time = np.array(time)
+        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        shp = (len(time), len(depth))
+        u = np.broadcast_to(coflow, shp)
+        v = np.broadcast_to(crossflow, shp)
+
+        dset = xr.Dataset(
+            data_vars=dict(
+                u=xr.Variable(('time', 'depth'), u),
+                v=xr.Variable(('time', 'depth'), v),
+                dens=xr.Variable(('time', 'depth'), dens),
+            ),
+            coords=dict(
+                depth=xr.Variable('depth', depth),
+                time=xr.Variable('time', time),
+            )
+        )
+        return Ambient(dset)
 
     def select(self, time):
-        return self.dset
+        return interp_time(self.dset, time)
+
+
+def interp_time(dset, time):
+    time_min = dset.time[0].values.item()
+    time_max = dset.time[-1].values.item()
+    clipped_time = np.clip(time, time_min, time_max)
+    return dset.interp(time=clipped_time)
 
 
 class Output:
@@ -109,13 +169,17 @@ class Output:
 
 
 class OutputCSV(Output):
-    def __init__(self, file):
+    def __init__(self, file, diskless=False):
         self.file = file
-        self._file = None
+        self.dset = None
         self._blank_file = True
+        self.diskless = diskless
 
     def __enter__(self):
-        self._file = open(self.file, 'w', encoding='utf-8', newline='\n')
+        if self.diskless:
+            self.dset = io.StringIO()
+        else:
+            self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
         self._blank_file = True
         return self
 
@@ -123,9 +187,9 @@ class OutputCSV(Output):
         self.close()
 
     def close(self):
-        if self._file is not None:
-            self._file.close()
-            self._file = None
+        if self.dset is not None:
+            self.dset.close()
+            self.dset = None
 
     def write(self, time, result):
         df = result.to_dataframe()
@@ -133,7 +197,7 @@ class OutputCSV(Output):
         df = df.reset_index().set_index(['release_time', 't'])
 
         # Append result to file, write headers only if blank file
-        df.to_csv(self._file, line_terminator='\n', header=self._blank_file)
+        df.to_csv(self.dset, line_terminator='\n', header=self._blank_file)
         self._blank_file = False
 
 
@@ -191,7 +255,13 @@ class OutputNC(Output):
         r['radius'].attrs['units'] = 'm'
         r['t'].attrs['units'] = 's'
 
-        r['z'].attrs['standard_name'] = 'depth_below_surface'
+        r['u'].attrs['standard_name'] = 'sea_water_x_velocity'
+        r['v'].attrs['standard_name'] = 'sea_water_x_velocity'
+        r['w'].attrs['standard_name'] = 'downward_sea_water_velocity'
+        r['z'].attrs['standard_name'] = 'depth'
+        r['density'].attrs['standard_name'] = 'sea_water_density'
+
+        r['w'].attrs['positive'] = 'down'
         r['z'].attrs['positive'] = 'down'
 
         r.coords['release_time'].attrs['long_name'] = 'time of release'

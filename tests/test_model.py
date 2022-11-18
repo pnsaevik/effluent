@@ -120,3 +120,68 @@ class Test_OutputNC:
             out.write(time=1, result=result)
             rt = out.dset.variables['release_time'][:]
             assert rt.tolist() == [0, 1]
+
+
+class Test_OutputCSV:
+    @pytest.fixture()
+    def result(self):
+        return xr.Dataset(
+            data_vars=dict(
+                x=xr.Variable('t', [0, 0]),
+                y=xr.Variable('t', [0, 0]),
+                z=xr.Variable('t', [0, 0]),
+                u=xr.Variable('t', [0, 0]),
+                v=xr.Variable('t', [0, 0]),
+                w=xr.Variable('t', [0, 0]),
+                density=xr.Variable('t', [0, 0]),
+                radius=xr.Variable('t', [0, 0]),
+            ),
+            coords=dict(
+                t=xr.Variable('t', [1000, 2000]),
+            ),
+        )
+
+    def test_can_append_variables(self, result):
+        from uuid import uuid4
+        with model.OutputCSV(uuid4(), diskless=True) as out:
+            out.write(time=0, result=result)
+            out.write(time=1, result=result)
+
+            out.dset.seek(0)
+            lines = out.dset.readlines()
+
+        assert len(lines) == 5
+        assert lines[0] == 'release_time,t,x,y,z,u,v,w,density,radius\n'
+        assert lines[1] == '0,1000,0,0,0,0,0,0,0,0\n'
+        assert lines[2] == '0,2000,0,0,0,0,0,0,0,0\n'
+        assert lines[3] == '1,1000,0,0,0,0,0,0,0,0\n'
+        assert lines[4] == '1,2000,0,0,0,0,0,0,0,0\n'
+
+
+class Test_Pipe_from_config:
+    def test_can_interpret_mapping(self):
+        conf = dict(
+            format='dict',
+            time=[0, 1],
+            flow=[0, 0],
+            dens=[0, 0],
+            decline=0,
+            diam=0,
+            depth=0,
+        )
+        p = model.Pipe.from_config(conf)
+        assert set(p.dset.variables) == {'u', 'w', 'diam', 'depth', 'dens', 'time'}
+
+
+class Test_Ambient_from_config:
+    def test_can_interpret_mapping(self):
+        conf = dict(
+            format='dict',
+            time=[0, 1],
+            depth=[0],
+            coflow=[[0], [0]],
+            crossflow=[[0], [0]],
+            dens=[[0], [0]],
+        )
+        p = model.Ambient.from_config(conf)
+        assert set(p.dset.variables) == {'u', 'v', 'depth', 'dens', 'time'}
