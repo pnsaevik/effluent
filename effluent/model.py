@@ -42,8 +42,10 @@ def load_config(fname_or_dict):
     conf = {}
 
     conf['pipe'] = {}
+    conf['pipe']['format'] = 'dict'
 
     conf['ambient'] = {}
+    conf['ambient']['format'] = 'dict'
 
     conf['solver'] = {}
     conf['solver']['resolution'] = input_conf['output']['resolution']
@@ -61,21 +63,41 @@ def load_config(fname_or_dict):
 
 
 class Pipe:
+    def __init__(self):
+        self.dset = xr.Dataset()
+
     @staticmethod
     def from_config(conf):
+        fmt = conf.pop('format')
+        factories = {'dict': Pipe.from_mapping}
+        factory = factories[fmt]
+        return factory(**conf)
+
+    @staticmethod
+    def from_mapping():
         return Pipe()
 
     def select(self, time):
-        return NotImplemented
+        return self.dset
 
 
 class Ambient:
+    def __init__(self):
+        self.dset = xr.Dataset()
+
     @staticmethod
     def from_config(conf):
+        fmt = conf.pop('format')
+        factories = {'dict': Ambient.from_mapping}
+        factory = factories[fmt]
+        return factory(**conf)
+
+    @staticmethod
+    def from_mapping():
         return Ambient()
 
     def select(self, time):
-        return NotImplemented
+        return self.dset
 
 
 class Output:
