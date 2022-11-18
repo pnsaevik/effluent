@@ -103,9 +103,9 @@ inclination angle of the jet,
 
 .. math ::
 
-    K = k_t \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_n \frac{w^2}{u^2 + v^2 + w^2}
+    K = k_n \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_t \frac{w^2}{u^2 + v^2 + w^2}
 
-with :math:`k_t = 0.5` and  :math:`k_t = 0.85`.
+with :math:`k_n = 0.5` and  :math:`k_t = 0.85`.
 
 
 Solving the equations
@@ -134,7 +134,7 @@ Reformulated equations below:
 
 .. math ::
 
-    \frac{1}{A} \frac{dA}{dt} = \frac{2}{b} \frac{db}{dt}
+    \frac{1}{A} \frac{dA}{dt} = \frac{2}{R} \frac{dR}{dt}
 
 **Conservation of mass**
 

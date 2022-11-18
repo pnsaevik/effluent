@@ -205,13 +205,31 @@ class Test_IVP_solve:
 
     @pytest.fixture()
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
+        """
+        Scenario: Horizontal pipe with constant output, no ambient velocity or
+        density difference.
+        """
         steps = np.array([0, 1000, 2000])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
         return ivp.solve()
 
+    @staticmethod
+    def sign_of_change(dset, v):
+        sgn = np.unique(np.sign(np.diff(dset[v].values)))
+        if len(sgn) > 1:
+            return np.nan
+        else:
+            return sgn[0]
+
     def test_returns_xr_dataset_when_horz_still(self, result_horz_still):
         assert isinstance(result_horz_still, xr.Dataset)
 
-    def test_x_increases_when_horz_still(self, result_horz_still):
-        x = result_horz_still.x.values
-        assert np.all(np.diff(x) > 0)
+    def test_variables_change_as_expected_when_horz_still(self, result_horz_still):
+        assert self.sign_of_change(result_horz_still, 'x') == 1
+        assert self.sign_of_change(result_horz_still, 'y') == 0
+        assert self.sign_of_change(result_horz_still, 'z') == 0
+        assert self.sign_of_change(result_horz_still, 'u') == -1
+        assert self.sign_of_change(result_horz_still, 'v') == 0
+        assert self.sign_of_change(result_horz_still, 'w') == 0
+        assert self.sign_of_change(result_horz_still, 'density') == 0
+        assert self.sign_of_change(result_horz_still, 'radius') == 1

@@ -379,28 +379,52 @@ class InitialValueProblem:
         :param y: Input vector of shape (n_vars, n_times)
         """
 
+        # Rename input variables
         # noinspection PyUnusedLocal
         t = t
-
         y_in = y
-
         x, y, z, u, v, w, d, r = y_in
 
-        ambient = self.ambient.interp(depth=z)
-        ua = ambient.u.values
-        va = ambient.v.values
-        da = ambient.dens.values
+        # Define coefficients
+        beta_t = 0.16   # Entrainment coefficient, co-flow
+        beta_n = 0.4    # Entrainment coefficient, cross-flow
+        k_t = 0.85      # Added mass coefficient, tangential gravity pull
+        k_n = 0.5       # Added mass coefficient, normal gravity pull
 
+        # Extract ambient velocity and density
+        ambient = self.ambient.interp(depth=z)
+        u_a = ambient.u.values
+        v_a = ambient.v.values
+        d_a = ambient.dens.values
+
+        # Compute added mass coefficient
+        speed_horz2 = u*u + v*v
+        speed_vert2 = w*w
+        speed2 = speed_horz2 + speed_vert2
+        K = k_n * speed_horz2 / speed2 + k_t * speed_vert2 / speed2
+
+        # Compute flow difference in tangential and normal direction
+        speed = np.sqrt(speed2)
+        u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        u_n = np.sqrt(speed2 - u_t * u_t)
+
+        # Displacement
         ddt_x = u
         ddt_y = v
         ddt_z = w
 
-        ddt_u = 0*u
-        ddt_v = 0*v
-        ddt_w = 0*w
+        # Jet expansion rate (entrainment rate)
+        ddt_r = beta_t * u_t + beta_n * u_n
 
-        ddt_d = 0*d
-        ddt_r = 0*r
+        # Conservation of mass
+        ddt_A_div_A = 2 * ddt_r / r
+        ddt_d = ddt_A_div_A * (d_a - d)
+
+        # Conservation of momentum
+        prefix = ddt_A_div_A * d_a / d
+        ddt_u = prefix * (u_a - u)
+        ddt_v = prefix * (v_a - v)
+        ddt_w = -prefix * w + K * (1 - d_a / d) * 9.81
 
         ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_r])
         return ddt_y
