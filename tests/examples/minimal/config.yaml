@@ -2,11 +2,10 @@
 
 # Characteristics of the pipe and the effluent flow
 pipe:
-  times: [0, 1200]  # Time since simulation start [s]
+  time: [0, 1200]  # Time since simulation start [s]
 
   flow: [1, 1]    # [m^3/s]
-  temp: [10, 10]  # [degrees celcius]
-  salt: [10, 10]  # [psu]
+  dens: [1000, 1000]  # [kg/m^3]
 
   diam: 0.5   # [m]
   depth: 50   # [m]
@@ -14,19 +13,19 @@ pipe:
 
 # Characteristics of the ambient water masses
 ambient:
-  times: [0, 3600]      # Time since simulation start [s]
-  depths: [0, 10, 50]   # Depth levels [m]
+  time: [0, 3600]      # Time since simulation start [s]
+  depth: [0, 10, 50]   # Depth levels [m]
 
-  # Velocity in co-flow, cross-flow (to the left) and in the upwards
-  # directions [m/s]
+  # Velocity in co-flow (parallel) and cross-flow (to the right) directions [m/s]
   coflow: [[.1, .1, .1], [.1, .1, .1]]
   crossflow: [[.2, .2, .2], [.2, .2, .2]]
-  upflow: [[0, 0, 0], [0, 0, 0]]
 
-  temp: [[10, 10, 10], [10, 10, 10]]  # [degrees celcius]
-  salt: [[34, 34, 34], [34, 34, 34]]  # [kg/m^3]
+  dens: [[1000, 1000, 1000], [1000, 1000, 1000]]  # Fluid density, kg/m^3
 
-# Output file format
+# Output options
 output:
-  file: out.nc
+  file: out.csv
+  resolution: 1    # Output resolution [s]
+  stagnation: 5   # Time of stagnation [s]
   frequency: 3600  # Output frequency [s]
+  stop: 3600  # Stop output after a certain time [s]

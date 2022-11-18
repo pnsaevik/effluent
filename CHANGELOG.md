@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2022-11-14
 
 ### Added
-
+- Working implementation of algorithm
+- Minimal example
 - Main script
 - Circle CI integration
 - Read The Docs documentation

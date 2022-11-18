@@ -1,14 +1,25 @@
 def run(*argv):
     conf_fname = argv[0]
 
-    # Load config file
-    import yaml
-    with open(conf_fname, encoding='utf-8') as fp:
-        conf = yaml.safe_load(fp)
+    init_logger()
 
-    # Save output file
-    import xarray as xr
-    result_fname = conf['output']['file']
-    xr.Dataset().to_netcdf(result_fname)
+    from .model import Model
+    model = Model(conf_fname)
+    model.run()
 
-    return result_fname
+    return model.output.file
+
+
+def init_logger(loglevel=None):
+    import logging
+    if loglevel is None:
+        loglevel = logging.DEBUG
+
+    package_name = str(__name__).split('.', maxsplit=1)[0]
+    package_logger = logging.getLogger(package_name)
+    package_logger.setLevel(loglevel)
+    ch = logging.StreamHandler()
+    ch.setLevel(loglevel)
+    formatter = logging.Formatter('%(asctime)s  %(name)s:%(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    package_logger.addHandler(ch)
