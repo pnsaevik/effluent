@@ -185,3 +185,33 @@ class Test_Ambient_from_config:
         )
         p = model.Ambient.from_config(conf)
         assert set(p.dset.variables) == {'u', 'v', 'depth', 'dens', 'time'}
+
+
+class Test_IVP_solve:
+    @pytest.fixture()
+    def pipe_dset_horz(self):
+        return xr.Dataset(dict(depth=100, u=1, w=0, dens=1000, diam=0.5))
+
+    @pytest.fixture()
+    def ambient_dset_still(self):
+        return xr.Dataset(
+            data_vars=dict(
+                u=xr.Variable('depth', [0, 0]),
+                v=xr.Variable('depth', [0, 0]),
+                dens=xr.Variable('depth', [1000, 1000]),
+            ),
+            coords=dict(depth=[0, 1000]),
+        )
+
+    @pytest.fixture()
+    def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
+        steps = np.array([0, 1000, 2000])
+        ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
+        return ivp.solve()
+
+    def test_returns_xr_dataset_when_horz_still(self, result_horz_still):
+        assert isinstance(result_horz_still, xr.Dataset)
+
+    def test_x_increases_when_horz_still(self, result_horz_still):
+        x = result_horz_still.x.values
+        assert np.all(np.diff(x) > 0)

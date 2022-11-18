@@ -342,7 +342,15 @@ class InitialValueProblem:
         self.method = 'RK45'
 
     def initial_conditions(self):
-        return np.zeros(8, dtype='f8')
+        x0 = 0
+        y0 = 0
+        z0 = self.pipe.depth.values.item()
+        u0 = self.pipe.u.values.item()
+        v0 = 0
+        w0 = self.pipe.w.values.item()
+        d0 = self.pipe.dens.values.item()
+        r0 = 0.5 * self.pipe.diam.values.item()
+        return np.array([x0, y0, z0, u0, v0, w0, d0, r0], 'f8')
 
     def solve(self):
         result = solve_ivp(
@@ -370,4 +378,29 @@ class InitialValueProblem:
         :param t: Vectorized time parameter of shape (n_times, )
         :param y: Input vector of shape (n_vars, n_times)
         """
-        return np.zeros_like(y)
+
+        # noinspection PyUnusedLocal
+        t = t
+
+        y_in = y
+
+        x, y, z, u, v, w, d, r = y_in
+
+        ambient = self.ambient.interp(depth=z)
+        ua = ambient.u.values
+        va = ambient.v.values
+        da = ambient.dens.values
+
+        ddt_x = u
+        ddt_y = v
+        ddt_z = w
+
+        ddt_u = 0*u
+        ddt_v = 0*v
+        ddt_w = 0*w
+
+        ddt_d = 0*d
+        ddt_r = 0*r
+
+        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_r])
+        return ddt_y
