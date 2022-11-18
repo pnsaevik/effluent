@@ -234,53 +234,50 @@ class Test_IVP_solve:
         )
 
     @pytest.fixture(scope='class')
+    def ambient_dset_stratified(self):
+        return xr.Dataset(
+            data_vars=dict(
+                u=xr.Variable('depth', [0, 0, 0]),
+                v=xr.Variable('depth', [0, 0, 0]),
+                dens=xr.Variable('depth', [980, 1000, 1020]),
+            ),
+            coords=dict(depth=[0, 100, 200]),
+        )
+
+    @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
-        """
-        Scenario: Horizontal pipe with constant output, no ambient velocity or
-        density difference.
-        """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
-        """
-        Scenario: Horizontal pipe with constant output, no ambient velocity or
-        density difference.
-        """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_decl, ambient_dset_still)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
-        """
-        Scenario: Horizontal pipe with constant output, no ambient velocity or
-        density difference.
-        """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_cross)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
-        """
-        Scenario: Horizontal pipe with constant output, no ambient velocity or
-        density difference.
-        """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_coflow)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
-        """
-        Scenario: Horizontal pipe with constant output, no ambient velocity or
-        density difference.
-        """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_light, ambient_dset_still)
+        return ivp.solve()
+
+    @pytest.fixture(scope='class')
+    def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
+        steps = np.linspace(0, 200, 11)
+        ivp = model.InitialValueProblem(steps, pipe_dset_light, ambient_dset_stratified)
         return ivp.solve()
 
     @staticmethod
@@ -353,3 +350,15 @@ class Test_IVP_solve:
         x_coflow = result_horz_coflow.x.values
         x_still = result_horz_still.x.values
         assert x_coflow[-1] > x_still[-1]
+
+    def test_variables_change_as_expected_when_light_stratified(self, result_light_stratified):
+        r = result_light_stratified
+        assert self.sign_of_change(r, 'x') == 1        # Increasing distance from outlet
+        assert self.sign_of_change(r, 'y') == 0        # No cross-flow
+        assert np.isnan(self.sign_of_change(r, 'z'))   # Vertical bouncing behaviour
+        assert self.sign_of_change(r, 'u') == -1       # Decreasing horizontal speed
+        assert self.sign_of_change(r, 'v') == 0        # No cross-flow
+        assert np.isnan(self.sign_of_change(r, 'w'))   # Vertical bouncing behaviour
+        assert np.isnan(self.sign_of_change(r, 'density'))  # Bouncing behaviour
+        assert self.sign_of_change(r, 'radius') == 1   # Radius increase
+
