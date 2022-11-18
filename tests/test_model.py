@@ -204,6 +204,17 @@ class Test_IVP_solve:
         )
 
     @pytest.fixture()
+    def ambient_dset_cross(self):
+        return xr.Dataset(
+            data_vars=dict(
+                u=xr.Variable('depth', [0, 0]),
+                v=xr.Variable('depth', [1, 1]),
+                dens=xr.Variable('depth', [1000, 1000]),
+            ),
+            coords=dict(depth=[0, 1000]),
+        )
+
+    @pytest.fixture()
     def pipe_dset_light(self):
         return xr.Dataset(dict(depth=100, u=1, w=0, dens=990, diam=0.5))
 
@@ -215,6 +226,16 @@ class Test_IVP_solve:
         """
         steps = np.array([0, 10, 20])
         ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
+        return ivp.solve()
+
+    @pytest.fixture()
+    def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
+        """
+        Scenario: Horizontal pipe with constant output, no ambient velocity or
+        density difference.
+        """
+        steps = np.array([0, 10, 20])
+        ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_cross)
         return ivp.solve()
 
     @pytest.fixture()
@@ -258,4 +279,15 @@ class Test_IVP_solve:
         assert self.sign_of_change(r, 'v') == 0
         assert self.sign_of_change(r, 'w') == -1
         assert self.sign_of_change(r, 'density') == 1
+        assert self.sign_of_change(r, 'radius') == 1
+
+    def test_variables_change_as_expected_when_horz_cross(self, result_horz_cross):
+        r = result_horz_cross
+        assert self.sign_of_change(r, 'x') == 1
+        assert self.sign_of_change(r, 'y') == 1
+        assert self.sign_of_change(r, 'z') == 0
+        assert self.sign_of_change(r, 'u') == -1
+        assert self.sign_of_change(r, 'v') == 1
+        assert self.sign_of_change(r, 'w') == 0
+        assert self.sign_of_change(r, 'density') == 0
         assert self.sign_of_change(r, 'radius') == 1
