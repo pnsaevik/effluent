@@ -82,8 +82,9 @@ documentation for details.
 Documentation
 =============
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   algorithm
-   input
-   output
+    algorithm
+    input
+    output
+    examples
