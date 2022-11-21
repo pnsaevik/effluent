@@ -6,6 +6,7 @@ In this example we show how to generate some code. We start with the following:
 
 .. doctest::
 
+    >>> import effluent
     >>> 2 + 2
     4
 
@@ -18,10 +19,11 @@ Let us see if it works with matplotlib:
 .. plot::
     :include-source:
 
+    import effluent
     import matplotlib.pyplot as plt
     import numpy as np
     x = np.random.randn(1000)
     plt.hist( x, 20)
     plt.grid()
-    plt.title(r'Normal: $\mu=%.2f, \sigma=%.2f$'%(x.mean(), x.std()))
+    plt.title(f'Version: {effluent.__version__}')
     plt.show()
