@@ -28,13 +28,8 @@ source_suffix = '.rst'
 
 # The full version, including alpha/beta/rc tags
 def getversion():
-    from pathlib import Path
-    vfile = Path(__file__).parent.parent.parent / 'effluent' / '__init__.py'
-    with open(vfile, 'r', encoding='utf-8') as fp:
-        lines = fp.readlines()
-
-    version = next(ln[15:-2] for ln in lines if ln.startswith('__version__ = "'))
-    return version
+    import effluent
+    return effluent.__version__
 
 
 release = getversion()
