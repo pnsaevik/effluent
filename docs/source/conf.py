@@ -41,9 +41,16 @@ release = getversion()
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
 ]
+
+# Matplotlib extension options
+plot_include_source = True
+plot_html_show_source_link = False
+plot_formats = ['png']
+plot_html_show_formats = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
