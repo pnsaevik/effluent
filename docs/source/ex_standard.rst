@@ -13,4 +13,17 @@ In this example we show how to generate some code. We start with the following:
     >>> print(Path(effluent.__file__).name)
     __init__.py
 
-As we can see, the end result is as expected..
+As we can see, the end result is as expected.
+
+However, the xarray import may be more challenging
+
+.. doctest::
+
+    >>> import xarray as xr
+    >>> xr.Dataset()
+    <xarray.Dataset>
+    Dimensions:  ()
+    Data variables:
+        *empty*
+
+Let us see if it works
