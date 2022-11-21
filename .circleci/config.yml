@@ -17,14 +17,17 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "Install prerequisites"
+          command: pip install pytest sphinx
+      - run:
           name: "Install package"
           command: pip install .
       - run:
-          name: "Install pytest"
-          command: pip install pytest
-      - run:
           name: "Run pytest"
           command: pytest
+      - run:
+          name: "Run sphinx doctest"
+          command: sphinx-build -M doctest ./docs/source/ ./docs/build/
 
   publisher:
     executor: python/default

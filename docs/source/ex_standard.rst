@@ -2,28 +2,15 @@
 Standard example
 ================================
 
-.. testsetup::
-    import effluent
-    from pathlib import Path
-
 In this example we show how to generate some code. We start with the following:
 
 .. doctest::
 
-    >>> print(Path(effluent.__file__).name)
-    __init__.py
+    >>> 2 + 2
+    5
 
 As we can see, the end result is as expected.
 
 However, the xarray import may be more challenging
-
-.. doctest::
-
-    >>> import xarray as xr
-    >>> xr.Dataset()
-    <xarray.Dataset>
-    Dimensions:  ()
-    Data variables:
-        *empty*
 
 Let us see if it works
