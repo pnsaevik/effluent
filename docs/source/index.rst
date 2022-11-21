@@ -8,7 +8,7 @@ Effluent: Pipe discharge model
 ==========================================
 
 
-What is effluent??
+What is effluent?
 ===================
 
 Effluent is a python package for simulating the dispersion of effluent
