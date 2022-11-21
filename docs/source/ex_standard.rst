@@ -7,7 +7,7 @@ In this example we show how to generate some code. We start with the following:
 .. doctest::
 
     >>> 2 + 2
-    5
+    4
 
 As we can see, the end result is as expected.
 
