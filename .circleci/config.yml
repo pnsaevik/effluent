@@ -20,6 +20,9 @@ jobs:
           name: "Install package"
           command: pip install .
       - run:
+          name: "Install pytest"
+          command: pip install pytest
+      - run:
           name: "Run pytest"
           command: pytest
 
