@@ -84,6 +84,6 @@ Documentation
 .. toctree::
    :maxdepth: 2
 
-   algo
+   algorithm
    input
    output
