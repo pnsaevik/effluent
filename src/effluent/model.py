@@ -1,5 +1,6 @@
 import io
 import numpy as np
+import pandas as pd
 from scipy.integrate import solve_ivp
 import xarray as xr
 import logging
@@ -46,24 +47,37 @@ def load_config(fname_or_dict):
 
     # --- Pipe ---
 
-    conf['pipe'] = {}
-    conf['pipe']['format'] = 'dict'
-    conf['pipe']['time'] = input_conf['pipe']['time']
-    conf['pipe']['flow'] = input_conf['pipe']['flow']
-    conf['pipe']['dens'] = input_conf['pipe']['dens']
-    conf['pipe']['decline'] = input_conf['pipe']['decline']
-    conf['pipe']['diam'] = input_conf['pipe']['diam']
-    conf['pipe']['depth'] = input_conf['pipe']['depth']
+    c = input_conf['pipe']
+
+    # Interpret input as a file name if there is only one input string
+    if isinstance(c, str):
+        c = dict(
+            file=c,
+            format=Path(c).suffix[1:]
+        )
+
+    # Add standard format specifier if not existing
+    if 'format' not in c:
+        c['format'] = 'dict'
+
+    conf['pipe'] = c
 
     # --- Ambient ---
 
-    conf['ambient'] = {}
-    conf['ambient']['format'] = 'dict'
-    conf['ambient']['time'] = input_conf['ambient']['time']
-    conf['ambient']['depth'] = input_conf['ambient']['depth']
-    conf['ambient']['coflow'] = input_conf['ambient']['coflow']
-    conf['ambient']['crossflow'] = input_conf['ambient']['crossflow']
-    conf['ambient']['dens'] = input_conf['ambient']['dens']
+    c = input_conf['ambient']
+
+    # Interpret input as a file name if there is only one input string
+    if isinstance(c, str):
+        c = dict(
+            file=c,
+            format=Path(c).suffix[1:]
+        )
+
+    # Add standard format specifier if not existing
+    if 'format' not in c:
+        c['format'] = 'dict'
+
+    conf['ambient'] = c
 
     # --- Solver ---
 
@@ -95,20 +109,42 @@ class Pipe:
     @staticmethod
     def from_config(conf):
         fmt = conf.pop('format')
-        factories = {'dict': Pipe.from_mapping}
+        factories = {'dict': Pipe.from_mapping, 'csv': Pipe.from_csv_file}
         factory = factories[fmt]
         return factory(**conf)
 
     @staticmethod
-    def from_mapping(time, flow, dens, decline, diam, depth):
+    def from_csv_file(file):
+        df = pd.read_csv(
+            file,
+            sep=',',
+            index_col='time',
+            header=0,
+            skipinitialspace=True,
+            skip_blank_lines=True,
+            comment='#',
+        )
+
+        df['u'], df['w'] = Pipe._compute_uw(df['flow'].values, df['decline'].values)
+        df = df.drop(columns=['flow', 'decline'])
+        dset = xr.Dataset.from_dataframe(df)
+        return Pipe(dset)
+
+    @staticmethod
+    def _compute_uw(flow, decline):
         theta = decline * np.pi / 180
+        u = flow * np.cos(theta)
+        w = flow * np.sin(theta)
+        return u, w
+
+    @staticmethod
+    def from_mapping(time, flow, dens, decline, diam, depth):
         time = np.array(time)
         assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
         shp = (len(time), )
         flow = np.broadcast_to(flow, shp)
         dens = np.broadcast_to(dens, shp)
-        u = flow * np.cos(theta)
-        w = flow * np.sin(theta)
+        u, w = Pipe._compute_uw(flow, decline)
 
         dset = xr.Dataset(
             data_vars=dict(
@@ -135,9 +171,25 @@ class Ambient:
     @staticmethod
     def from_config(conf):
         fmt = conf.pop('format')
-        factories = {'dict': Ambient.from_mapping}
+        factories = {'dict': Ambient.from_mapping, 'csv': Ambient.from_csv_file}
         factory = factories[fmt]
         return factory(**conf)
+
+    @staticmethod
+    def from_csv_file(file):
+        df = pd.read_csv(
+            file,
+            sep=',',
+            index_col=('time', 'depth'),
+            header=0,
+            skipinitialspace=True,
+            skip_blank_lines=True,
+            comment='#',
+        )
+
+        dset = xr.Dataset.from_dataframe(df)
+        dset = dset.rename_vars(coflow='u', crossflow='v')
+        return Ambient(dset)
 
     @staticmethod
     def from_mapping(time, depth, coflow, crossflow, dens):

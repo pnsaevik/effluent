@@ -79,11 +79,13 @@ setup. A samle config file is shown below:
 Other input and output formats are also available. See the rest of the
 documentation for details.
 
+
 Documentation
 =============
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   algo
-   input
-   output
+    algorithm
+    input
+    output
+    examples

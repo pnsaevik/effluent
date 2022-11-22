@@ -12,9 +12,9 @@ from datetime import datetime
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -28,13 +28,8 @@ source_suffix = '.rst'
 
 # The full version, including alpha/beta/rc tags
 def getversion():
-    from pathlib import Path
-    vfile = Path(__file__).parent.parent.parent / 'effluent' / '__init__.py'
-    with open(vfile, 'r', encoding='utf-8') as fp:
-        lines = fp.readlines()
-
-    version = next(ln[15:-2] for ln in lines if ln.startswith('__version__ = "'))
-    return version
+    import effluent
+    return effluent.__version__
 
 
 release = getversion()
@@ -47,7 +42,14 @@ release = getversion()
 # ones.
 extensions = [
     'sphinx.ext.mathjax',
+    'sphinx.ext.doctest',
 ]
+
+# Matplotlib extension options
+plot_include_source = True
+plot_html_show_source_link = False
+plot_formats = ['png']
+plot_html_show_formats = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
