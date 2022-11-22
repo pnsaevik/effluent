@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 
-named_examples = ['minimal']
+named_examples = ['minimal', 'neutral']
 
 
 class Example:
