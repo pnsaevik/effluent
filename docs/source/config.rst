@@ -25,3 +25,4 @@ Here we describe the different options available:
     config/pipe
     config/ambient
     config/output
+    config/model
