@@ -86,6 +86,5 @@ Documentation
     :maxdepth: 2
 
     algorithm
-    input
-    output
+    config
     examples
