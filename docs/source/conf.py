@@ -1,4 +1,20 @@
 from datetime import datetime
+from sphinx.application import Sphinx
+from sphinx.util.docfields import Field
+
+
+def setup(app: Sphinx):
+    app.add_object_type(
+        'confval',
+        'confval',
+        objname='configuration value',
+        indextemplate='pair: %s; configuration value',
+        doc_field_types=[
+            Field('type', label='Type', has_arg=False, names=('type',)),
+            Field('default', label='Default', has_arg=False, names=('default',)),
+            Field('units', label='Units', has_arg=False, names=('units',)),
+        ]
+    )
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -44,6 +60,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
 ]
+
+nitpicky = True
 
 # Matplotlib extension options
 plot_include_source = True
