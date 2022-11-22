@@ -79,22 +79,6 @@ setup. A samle config file is shown below:
 Other input and output formats are also available. See the rest of the
 documentation for details.
 
-Matplotlib
-============
-
-An example:
-
-.. plot::
-
-    # import effluent
-    import matplotlib.pyplot as plt
-    import numpy as np
-    x = np.random.randn(1000)
-    plt.hist( x, 20)
-    plt.grid()
-    plt.title(f'Version: 1')
-    plt.show()
-
 
 Documentation
 =============
