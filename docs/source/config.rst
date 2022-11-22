@@ -17,9 +17,11 @@ or from within python as
 
 In both cases, simulation details are specified in the
 file ``config.toml``, written in the `TOML file format <https://toml.io/en/>`_.
-Here, we describe the different options available.
+Here we describe the different options available:
 
 .. toctree::
     :maxdepth: 2
 
     config/pipe
+    config/ambient
+    config/output
