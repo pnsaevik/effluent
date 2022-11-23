@@ -2,9 +2,15 @@
 Ambient parameters
 ===============================
 
-The following configuration parameters determine the physical properties of
-the ambient water masses. It is possible to let the properties vary with time
+Ambient parameters determine the physical properties of
+the ambient water masses. The properties may with time
 and depth.
+
+It is required to supply either a complete set of explicit parameters
+(:confval:`ambient.time`, :confval:`ambient.depth`, :confval:`ambient.coflow`,
+:confval:`ambient.crossflow` and :confval:`ambient.dens`) or the name of an
+external file containing the parameters (:confval:`ambient.csv.file`
+or :confval:`ambient.nc.file`).
 
 |
 

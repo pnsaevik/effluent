@@ -2,9 +2,11 @@
 Output parameters
 ===============================
 
-The following configuration parameters describe the simulation process and the
-output file format. It is possible to simulate the effluent plume at different
-release times and record the output in each case.
+The output file contains the trajectory of the effluent jet for
+different release times. The output parameters described below determine the
+file format and the amount of data written. They affect the simulation process
+as well, since the software only performs computations that are required for
+the output.
 
 |
 
@@ -76,8 +78,8 @@ release times and record the output in each case.
 
     :type: string
 
-    Write results to the specified file using the CSV format. Output variables
-    are comma-separated. Rows are sorted by ``release_time``, then by ``t``.
+    Write results to the specified comma-delimited text file.
+    Rows are sorted by ``release_time``, then by ``t``.
 
 |
 

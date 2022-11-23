@@ -2,9 +2,15 @@
 Pipe parameters
 ===============================
 
-The following configuration parameters determine the physical properties of
-the outlet pipe and the effluent water masses. It is possible to let the
-properties vary in time.
+Pipe parameters determine the physical properties of
+the outlet pipe and the effluent water masses. The
+properties may vary with time.
+
+It is required to supply either a complete set of explicit parameters
+(:confval:`pipe.time`, :confval:`pipe.flow`, :confval:`pipe.dens`,
+:confval:`pipe.diam`, :confval:`pipe.depth` and :confval:`pipe.decline`) or the
+name of an external file containing the parameters (:confval:`pipe.csv.file`
+or :confval:`pipe.nc.file`).
 
 |
 

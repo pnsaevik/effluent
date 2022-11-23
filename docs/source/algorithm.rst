@@ -47,13 +47,12 @@ Using the top hat profile, we can express this relation as
 
     \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n,
 
-where :math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
+where :math:`\beta_t` is determined by :confval:`model.beta_t`,
+:math:`\beta_n` is determined by :confval:`model.beta_n`,
+:math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
 is the difference between jet velocity and ambient velocity in the tangential
 (along-jet) direction, and :math:`\Delta u_n` is the velocity difference in
-the normal (across-jet) direction. The constants :math:`\beta_t` and
-:math:`\beta_n` are determined by experiments to be
-:math:`\beta_t = 0.16` and :math:`\beta_n = 0.4`.
-
+the normal (across-jet) direction.
 
 Conservation of mass
 ====================
@@ -103,9 +102,10 @@ inclination angle of the jet,
 
 .. math ::
 
-    K = k_n \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_t \frac{w^2}{u^2 + v^2 + w^2}
+    K = k_n \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_t \frac{w^2}{u^2 + v^2 + w^2},
 
-with :math:`k_n = 0.5` and  :math:`k_t = 0.85`.
+where :math:`k_n` is determined by :confval:`model.mass_n`
+and :math:`k_t` is determined by :confval:`model.mass_t`.
 
 
 Solving the equations
@@ -115,6 +115,8 @@ We choose the following variables as our primary variables. The differential
 equations are reformulated in terms of the primary variables, and the remaining
 variables are computed from the primary variables.
 
+==============  =============================================================
+Variable        Description
 ==============  =============================================================
 :math:`x`       Horizontal distance from outlet, in the direction parallel to
                 the pipe
