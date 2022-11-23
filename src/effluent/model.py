@@ -38,9 +38,9 @@ def load_config(fname_or_dict):
     if isinstance(fname_or_dict, dict):
         input_conf = fname_or_dict
     else:
-        import toml
-        with open(fname_or_dict, encoding='utf-8') as fp:
-            input_conf = toml.load(fp)
+        import tomli
+        with open(fname_or_dict, 'rb') as fp:
+            input_conf = tomli.load(fp)
 
     # noinspection PyDictCreation
     conf = {}
