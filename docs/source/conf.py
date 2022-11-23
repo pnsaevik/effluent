@@ -1,6 +1,8 @@
 from datetime import datetime
 from sphinx.application import Sphinx
 from sphinx.util.docfields import Field
+import os
+import sys
 
 
 def setup(app: Sphinx):
@@ -16,6 +18,7 @@ def setup(app: Sphinx):
         ]
     )
 
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -28,8 +31,6 @@ def setup(app: Sphinx):
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
 sys.path.insert(0, os.path.abspath('../../src'))
 
 
@@ -62,6 +63,9 @@ extensions = [
 ]
 
 nitpicky = True
+html_css_files = [
+    'css/custom.css',
+]
 
 # Matplotlib extension options
 plot_include_source = True

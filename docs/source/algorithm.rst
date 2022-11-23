@@ -84,16 +84,18 @@ the momentum. This can be expressed as
 
 where :math:`g` is the acceleration of gravity, :math:`K` is the added mass
 coefficient (explained below), :math:`(u, v, w)` is the vector-valued velocity
-and the subscript :math:`a` denotes ambient quantities. In vector notation,
-
-.. math ::
-
-    \frac{d}{dt}(A \rho \mathbf{u}) = \frac{dA}{dt}\rho_a \mathbf{u_a} + A K (\rho - \rho_a) \mathbf{g},
-
+and the subscript :math:`a` denotes ambient quantities.
 In our chosen coordinate system, :math:`u` is the horizontal velocity
-in the direction of the pipe, :math:`v` is the horizontal transverse velocity,
-with positive direction to the right of :math:`u`, while :math:`w` is the
-vertical velocity, with positive direction downwards.
+in the direction of the pipe, :math:`v` is the horizontal transverse velocity
+with positive direction to the right of :math:`u` and :math:`w` is the
+vertical velocity with positive direction downwards.
+
+..
+    # In vector notation,
+    #
+    # .. math ::
+    #
+    #    \frac{d}{dt}(A \rho \mathbf{u}) = \frac{dA}{dt}\rho_a \mathbf{u_a} + A K (\rho - \rho_a) \mathbf{g},
 
 The added mass coefficient :math:`K` is a scaling term which reduces the
 effect of gravity, due to the fact that vertical acceleration of the plume also
@@ -111,9 +113,7 @@ and :math:`k_t` is determined by :confval:`model.mass_t`.
 Solving the equations
 ======================
 
-We choose the following variables as our primary variables. The differential
-equations are reformulated in terms of the primary variables, and the remaining
-variables are computed from the primary variables.
+We choose the following as our primary variables:
 
 ==============  =============================================================
 Variable        Description
@@ -130,25 +130,65 @@ Variable        Description
 :math:`R`       Radius of the computational element
 ==============  =============================================================
 
-Reformulated equations below:
+The differential equations are reformulated in terms of the primary variables,
+and the remaining variables are computed from the primary variables. Using the
+vector forms
 
-**Change of area, by definition**
+.. math ::
+    \mathbf{x} = x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
+
+and
+
+.. math ::
+    \mathbf{u} = u\mathbf{i} + v\mathbf{j} + w\mathbf{k},
+
+we can write the primary equations as:
+
+Displacement
+---------------
+
+.. math ::
+
+    \tag{1} \frac{d\mathbf{x}}{dt} = \mathbf{u}
+
+Conservation of momentum:
+--------------------------
+
+.. math ::
+
+    \tag{2} \frac{d\mathbf{u}}{dt} = \frac{1}{A} \frac{dA}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
+
+Conservation of mass
+------------------------
+
+.. math ::
+
+    \tag{3} \frac{d\rho}{dt} = \frac{1}{A} \frac{dA}{dt} (\rho_a - \rho)
+
+Jet expansion rate
+---------------------
+
+.. math ::
+
+    \tag{4} \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
+
+
+
+
+In addition, we utilize the following substitution, which follows directly
+from the fact that :math:`A = \pi R^2`:
+
+Change of area, by definition
+--------------------------------
 
 .. math ::
 
     \frac{1}{A} \frac{dA}{dt} = \frac{2}{R} \frac{dR}{dt}
 
-**Conservation of mass**
 
-.. math ::
-
-    \frac{d\rho}{dt} = \frac{1}{A} \frac{dA}{dt} (\rho_a - \rho)
-
-**Conservation of momentum:**
-
-.. math ::
-
-    \frac{d\mathbf{u}}{dt} = \frac{1}{A} \frac{dA}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
+The equations are solved using
+`scipy.integrate.solve_ivp <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html>`_,
+with parameters set by :doc:`/config/solver`
 
 Bibliography
 ===================

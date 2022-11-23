@@ -26,3 +26,4 @@ Here we describe the different options available:
     config/ambient
     config/output
     config/model
+    config/solver

@@ -3,7 +3,7 @@ Output parameters
 ===============================
 
 The output file contains the trajectory of the effluent jet for
-different release times. The output parameters described below determine the
+different release times. The output parameters determine the
 file format and the amount of data written. They affect the simulation process
 as well, since the software only performs computations that are required for
 the output.
