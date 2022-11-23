@@ -14,7 +14,7 @@ class Example:
 
     def run(self):
         os.chdir(self.path)
-        conf_fname = self.path / 'config.yaml'
+        conf_fname = self.path / 'config.toml'
         result_fname = Path(effluent.run(conf_fname))
         expected_fname = self.path / ('expected' + result_fname.suffix)
         if not expected_fname.exists():

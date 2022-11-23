@@ -1,4 +1,23 @@
 from datetime import datetime
+from sphinx.application import Sphinx
+from sphinx.util.docfields import Field
+import os
+import sys
+
+
+def setup(app: Sphinx):
+    app.add_object_type(
+        'confval',
+        'confval',
+        objname='configuration value',
+        indextemplate='pair: %s; configuration value',
+        doc_field_types=[
+            Field('type', label='Type', has_arg=False, names=('type',)),
+            Field('default', label='Default', has_arg=False, names=('default',)),
+            Field('units', label='Units', has_arg=False, names=('units',)),
+        ]
+    )
+
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -12,8 +31,6 @@ from datetime import datetime
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
 sys.path.insert(0, os.path.abspath('../../src'))
 
 
@@ -43,6 +60,11 @@ release = getversion()
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
+]
+
+nitpicky = True
+html_css_files = [
+    'css/custom.css',
 ]
 
 # Matplotlib extension options
