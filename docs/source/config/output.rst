@@ -15,8 +15,7 @@ the output.
     :type: array of strings
     :default: (all variables)
 
-    Variables to include in the output, all describing properties of the plume
-    at various times. Possible alternatives are:
+    Variables to include in the output. Possible alternatives are:
 
     * ``release_time``: Time of release, relative to simulation start [s]
     * ``t``: Time since release from pipe outlet [s]
