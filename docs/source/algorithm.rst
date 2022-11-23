@@ -2,7 +2,7 @@
 Algorithm
 ===================
 
-Our derivation closely follows `[1]`_.
+Our derivation closely follows |lee2003|_.
 The jet discharge is divided into small computational units, or fluid elements.
 Each element is a thin cross-sectional slice of the jet which moves and expands
 with the flow. The boundaries of the element are constructed so that
@@ -12,6 +12,10 @@ with the flow. The boundaries of the element are constructed so that
 
 2.  The flux of tracer mass through the lateral boundary of the
     element is zero (the element expands with the jet).
+
+We also assume that there is no net torque acting on the element, and that the
+ambient flow is homogeneous at the boundaries of the element. The element will
+therefore never rotate.
 
 
 Cross-sectional profile
@@ -30,7 +34,7 @@ It turns out that both the gaussian and top-hat cases are equivalent if
     gaussian distribution.
 
 Since the top-hat formulation is easier to work with and yields equivalent
-results, we use this formulation extensively in the following derivation. The
+results, we use this formulation in the following derivation. The
 end results can be converted back to a gaussian distribution if required.
 
 
@@ -58,49 +62,46 @@ Conservation of mass
 ====================
 
 Mass increase inside the computational element due to entrainment of ambient
-water masses. This can be expressed as
+water masses can be expressed as
 
 .. math ::
 
-    \frac{d}{dt}(A \rho) = \frac{dA}{dt}\rho_a
+    \frac{d}{dt}(\rho V) = \rho_a \frac{dV}{dt},
 
-where :math:`A = \pi R^2` is the area, :math:`\rho` is the jet density and
+where
+:math:`\rho` is the jet density and
 :math:`\rho_a` is the ambient water density.
 
 
 Conservation of momentum
 =========================
 
-Entrainment of ambient water masses into the computational element also changes
-the momentum. This can be expressed as
+Change in horizontal momentum due to entrainment of ambient water masses can be
+expressed as
 
 .. math ::
 
-    \frac{d}{dt}(A \rho u) =&\, \frac{dA}{dt}\rho_a u_a
+    \frac{d}{dt}(\rho u V) =&\, \rho_a u_a \frac{dV}{dt}
 
-    \frac{d}{dt}(A \rho v) =&\, \frac{dA}{dt}\rho_a v_a
+    \frac{d}{dt}(\rho v V) =&\, \rho_a v_a \frac{dV}{dt}
 
-    \frac{d}{dt}(A \rho w) =&\, A K (\rho - \rho_a) g
+where :math:`u` is the horizontal velocity in the direction of the pipe and
+:math:`v` is the horizontal transverse velocity with positive direction to the
+right of :math:`u`. The subscript :math:`a` denotes ambient quantities.
 
-where :math:`g` is the acceleration of gravity, :math:`K` is the added mass
-coefficient (explained below), :math:`(u, v, w)` is the vector-valued velocity
-and the subscript :math:`a` denotes ambient quantities.
-In our chosen coordinate system, :math:`u` is the horizontal velocity
-in the direction of the pipe, :math:`v` is the horizontal transverse velocity
-with positive direction to the right of :math:`u` and :math:`w` is the
-vertical velocity with positive direction downwards.
+We assume that the ambient vertical velocity is zero. Vertical momentum change
+due to gravity is expressed as
 
-..
-    # In vector notation,
-    #
-    # .. math ::
-    #
-    #    \frac{d}{dt}(A \rho \mathbf{u}) = \frac{dA}{dt}\rho_a \mathbf{u_a} + A K (\rho - \rho_a) \mathbf{g},
+.. math ::
 
-The added mass coefficient :math:`K` is a scaling term which reduces the
-effect of gravity, due to the fact that vertical acceleration of the plume also
-stirs up motion of water outside the plume. The term is dependent on the
-inclination angle of the jet,
+    \frac{d}{dt}(\rho w V) = V K (\rho - \rho_a) g
+
+where :math:`w` is the vertical velocity with positive direction downwards and
+:math:`g` is the acceleration of gravity. :math:`K` is the added mass
+coefficient, which is a scaling term that reduces the
+effect of gravity. The term is required since vertical acceleration of the
+plume also stirs up motion of water outside the plume, slowing down the
+acceleration. The term depends on the inclination angle of the jet,
 
 .. math ::
 
@@ -108,6 +109,24 @@ inclination angle of the jet,
 
 where :math:`k_n` is determined by :confval:`model.mass_n`
 and :math:`k_t` is determined by :confval:`model.mass_t`.
+
+Conservation of volume
+=======================
+
+By continuity, the thickness :math:`s` of the computational element is
+proportional to the faceward velocity :math:`u`. The volume :math:`V` of the
+element can therefore be expressed as
+
+.. math ::
+
+    V = \frac{s_0}{u_0} u \pi R^2,
+
+where the subscript :math:`0` denote initial quantities. The rate of volume
+change can be expressed as
+
+.. math ::
+
+    \frac{1}{V} \frac{dV}{dt} = \frac{1}{u} \frac{du}{dt} + \frac{2}{R} \frac{dR}{dt}.
 
 
 Solving the equations
@@ -156,14 +175,14 @@ Conservation of momentum:
 
 .. math ::
 
-    \tag{2} \frac{d\mathbf{u}}{dt} = \frac{1}{A} \frac{dA}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
+    \tag{2} \frac{d\mathbf{u}}{dt} = \frac{1}{V} \frac{dV}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
 
 Conservation of mass
 ------------------------
 
 .. math ::
 
-    \tag{3} \frac{d\rho}{dt} = \frac{1}{A} \frac{dA}{dt} (\rho_a - \rho)
+    \tag{3} \frac{d\rho}{dt} = \frac{1}{V} \frac{dV}{dt} (\rho_a - \rho)
 
 Jet expansion rate
 ---------------------
@@ -173,28 +192,16 @@ Jet expansion rate
     \tag{4} \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
 
 
-
-
-In addition, we utilize the following substitution, which follows directly
-from the fact that :math:`A = \pi R^2`:
-
-Change of area, by definition
---------------------------------
-
-.. math ::
-
-    \frac{1}{A} \frac{dA}{dt} = \frac{2}{R} \frac{dR}{dt}
-
-
 The equations are solved using
 `scipy.integrate.solve_ivp <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html>`_,
-with parameters set by :doc:`/config/solver`
+with configurable :doc:`solver parameters </config/solver>`.
 
 Bibliography
 ===================
 
-.. _[1]:
+.. |lee2003| replace:: Lee and Chu (2003)
+.. _lee2003: https://doi.org/10.1007/978-1-4615-0407-8
 
-[1]  Lee, Joseph H. W., and Chu, Vincent H. (2003). *Turbulent Jets and Plumes*.
-Boston, MA: Springer US.
+Lee, Joseph H. W., and Chu, Vincent H. (2003). *Turbulent Jets and Plumes*.
+Springer New York, NY.
 `doi:10.1007/978-1-4615-0407-8 <https://doi.org/10.1007/978-1-4615-0407-8>`_.
