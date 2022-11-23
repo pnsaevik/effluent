@@ -38,9 +38,9 @@ def load_config(fname_or_dict):
     if isinstance(fname_or_dict, dict):
         input_conf = fname_or_dict
     else:
-        import yaml
+        import toml
         with open(fname_or_dict, encoding='utf-8') as fp:
-            input_conf = yaml.safe_load(fp)
+            input_conf = toml.load(fp)
 
     # noinspection PyDictCreation
     conf = {}
@@ -144,7 +144,7 @@ class Pipe:
         shp = (len(time), )
         flow = np.broadcast_to(flow, shp)
         dens = np.broadcast_to(dens, shp)
-        u, w = Pipe._compute_uw(flow, decline)
+        u, w = Pipe._compute_uw(flow, np.array(decline))
 
         dset = xr.Dataset(
             data_vars=dict(
