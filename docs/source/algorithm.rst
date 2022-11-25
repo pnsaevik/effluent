@@ -2,7 +2,7 @@
 Algorithm
 ===================
 
-Our derivation closely follows |lee2003|_.
+Our derivation closely follows Chapter 9 of |lee2003|_.
 The jet discharge is divided into small computational units, or fluid elements.
 Each element is a thin cross-sectional slice of the jet which moves and expands
 with the flow. The boundaries of the element are constructed so that
@@ -37,15 +37,23 @@ Since the top-hat formulation is easier to work with and yields equivalent
 results, we use this formulation in the following derivation. The
 end results can be converted back to a gaussian distribution if required.
 
+Buoyant jets eventually develop a non-gaussian, kidney shaped cross sectional
+profile with a double peak of concentration maxima. In this case, we identify
+the plume boundary with the turbulent interface where the intermittency factor
+is 50 %.
+
 
 Jet expansion rate
 ==================
 
 A turbulent jet expands as it moves through the ambient fluid due to
 the entrainment of surrounding water masses at the edges of the jet.
-Experiments show that the jet quickly develop a
-gaussian profile, which expands laterally at a rate proportional to its speed.
-Using the top hat profile, we can express this relation as
+Entrainment is driven by the velocity difference between the jet and the
+ambient fluid, which can be decomposed into a tangential and normal component.
+The tangential component of the velocity difference is responsible for
+*shear entrainment*, while the normal component is responsible for
+*vortex entrainment*. To combine the two processes, we employ the
+*additive hypothesis*,
 
 .. math ::
 
@@ -105,7 +113,7 @@ acceleration. The term depends on the inclination angle of the jet,
 
 .. math ::
 
-    K = k_n \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_t \frac{w^2}{u^2 + v^2 + w^2},
+    K = \frac{1}{1 + k_n} \cdot \frac{u^2 + v^2}{u^2 + v^2 + w^2} + \frac{1}{1 + k_t} \cdot \frac{w^2}{u^2 + v^2 + w^2},
 
 where :math:`k_n` is determined by :confval:`model.mass_n`
 and :math:`k_t` is determined by :confval:`model.mass_t`.
