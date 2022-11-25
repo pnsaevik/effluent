@@ -440,26 +440,26 @@ class InitialValueProblem:
         # noinspection PyUnusedLocal
         t = t
         y_in = y
-        x, y, z, u, v, w, d, r = y_in
+        x, y, z, u, v, w, rho, R = y_in
 
         # Define coefficients
         beta_t = 0.16   # Entrainment coefficient, co-flow
         beta_n = 0.4    # Entrainment coefficient, cross-flow
-        k_t = 0.85      # Added mass coefficient, tangential gravity pull
-        k_n = 0.5       # Added mass coefficient, normal gravity pull
+        K_t = 0.85      # Added mass coefficient, tangential gravity pull
+        K_n = 0.5       # Added mass coefficient, normal gravity pull
 
         # Extract ambient velocity and density
         z_min, z_max = self.ambient.depth[[0, -1]].values
         ambient = self.ambient.interp(depth=np.clip(z, z_min, z_max))
         u_a = ambient.u.values
         v_a = ambient.v.values
-        d_a = ambient.dens.values
+        rho_a = ambient.dens.values
 
         # Compute added mass coefficient
         speed_horz2 = u*u + v*v
         speed_vert2 = w*w
         speed2 = speed_horz2 + speed_vert2
-        K = k_n * speed_horz2 / speed2 + k_t * speed_vert2 / speed2
+        K = K_n * speed_horz2 / speed2 + K_t * speed_vert2 / speed2
 
         # Compute flow difference in tangential and normal direction
         diff_u = u - u_a
@@ -476,17 +476,17 @@ class InitialValueProblem:
         ddt_z = w
 
         # Jet expansion rate (entrainment rate)
-        ddt_r = beta_t * diff_u_t + beta_n * diff_u_n
+        ddt_R = beta_t * diff_u_t + beta_n * diff_u_n
 
         # Conservation of mass
-        ddt_A_div_A = 2 * ddt_r / r
-        ddt_d = ddt_A_div_A * (d_a - d)
+        ddt_A_div_A = 2 * ddt_R / R
+        ddt_d = ddt_A_div_A * (rho_a - rho)
 
         # Conservation of momentum
-        prefix = ddt_A_div_A * d_a / d
+        prefix = ddt_A_div_A * rho_a / rho
         ddt_u = prefix * (u_a - u)
         ddt_v = prefix * (v_a - v)
-        ddt_w = -prefix * w + K * (1 - d_a / d) * 9.81
+        ddt_w = -prefix * w + K * (1 - rho_a / rho) * 9.81
 
-        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_r])
+        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_R])
         return ddt_y
