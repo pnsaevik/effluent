@@ -56,6 +56,7 @@ The tangential component of the velocity difference is responsible for
 *additive hypothesis*,
 
 .. math ::
+    :label: entrainment
 
     \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n,
 
@@ -73,6 +74,7 @@ Mass increase inside the computational element due to entrainment of ambient
 water masses can be expressed as
 
 .. math ::
+    :label: masscons
 
     \frac{d}{dt}(\rho V) = \rho_a \frac{dV}{dt},
 
@@ -88,10 +90,14 @@ Change in horizontal momentum due to entrainment of ambient water masses can be
 expressed as
 
 .. math ::
+    :label: momcons_u
 
-    \frac{d}{dt}(\rho u V) =&\, \rho_a u_a \frac{dV}{dt}
+    \frac{d}{dt}(\rho u V) = \rho_a u_a \frac{dV}{dt}
 
-    \frac{d}{dt}(\rho v V) =&\, \rho_a v_a \frac{dV}{dt}
+.. math ::
+    :label: momcons_v
+
+    \frac{d}{dt}(\rho v V) = \rho_a v_a \frac{dV}{dt}
 
 where :math:`u` is the horizontal velocity in the direction of the pipe and
 :math:`v` is the horizontal transverse velocity with positive direction to the
@@ -101,6 +107,7 @@ We assume that the ambient vertical velocity is zero. Vertical momentum change
 due to gravity is expressed as
 
 .. math ::
+    :label: momcons_w
 
     \frac{d}{dt}(\rho w V) = V K (\rho - \rho_a) g
 
@@ -112,6 +119,7 @@ plume also stirs up motion of water outside the plume, slowing down the
 acceleration. The term depends on the inclination angle of the jet,
 
 .. math ::
+    :label: addmass
 
     K = \frac{1}{1 + k_n} \cdot \frac{u^2 + v^2}{u^2 + v^2 + w^2} + \frac{1}{1 + k_t} \cdot \frac{w^2}{u^2 + v^2 + w^2},
 
@@ -121,21 +129,17 @@ and :math:`k_t` is determined by :confval:`model.mass_t`.
 Conservation of volume
 =======================
 
-By continuity, the thickness :math:`s` of the computational element is
+By continuity, the thickness of the computational element is
 proportional to the faceward velocity :math:`u`. The volume :math:`V` of the
 element can therefore be expressed as
 
 .. math ::
+    :label: voldef
 
     V = \frac{s_0}{u_0} u \pi R^2,
 
-where the subscript :math:`0` denote initial quantities. The rate of volume
-change can be expressed as
-
-.. math ::
-
-    \frac{1}{V} \frac{dV}{dt} = \frac{1}{u} \frac{du}{dt} + \frac{2}{R} \frac{dR}{dt}.
-
+where :math:`s_0` is the initial thickness and :math:`u_0` the initial
+velocity.
 
 Solving the equations
 ======================
@@ -157,16 +161,20 @@ Variable        Description
 :math:`R`       Radius of the computational element
 ==============  =============================================================
 
-The differential equations are reformulated in terms of the primary variables,
-and the remaining variables are computed from the primary variables. Using the
+The differential equations are reformulated in terms of the primary variables.
+Remaining variables are computed from the primary variables. Using the
 vector forms
 
 .. math ::
+    :label: xvec
+
     \mathbf{x} = x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
 
 and
 
 .. math ::
+    :label: uvec
+
     \mathbf{u} = u\mathbf{i} + v\mathbf{j} + w\mathbf{k},
 
 we can write the primary equations as:
@@ -175,29 +183,43 @@ Displacement
 ---------------
 
 .. math ::
+    :label: sol_displ
 
-    \tag{1} \frac{d\mathbf{x}}{dt} = \mathbf{u}
+    \frac{d\mathbf{x}}{dt} = \mathbf{u}
 
 Conservation of momentum:
 --------------------------
 
 .. math ::
+    :label: sol_mom
 
-    \tag{2} \frac{d\mathbf{u}}{dt} = \frac{1}{V} \frac{dV}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
+    \frac{d\mathbf{u}}{dt} = \frac{1}{V} \frac{dV}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
 
 Conservation of mass
 ------------------------
 
 .. math ::
+    :label: sol_mass
 
-    \tag{3} \frac{d\rho}{dt} = \frac{1}{V} \frac{dV}{dt} (\rho_a - \rho)
+    \frac{d\rho}{dt} = \frac{1}{V} \frac{dV}{dt} (\rho_a - \rho)
 
 Jet expansion rate
 ---------------------
 
 .. math ::
+    :label: sol_jet
 
-    \tag{4} \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
+    \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
+
+|
+
+In addition we utilize the following expression for the rate of volume change,
+which is derived from :eq:`masscons`, :eq:`momcons_u` and :eq:`voldef`:
+
+.. math ::
+    :label: sol_voldef
+
+    \frac{1}{V}\frac{dV}{dt} = \frac{1}{R}\frac{dR}{dt}\frac{2 \rho u}{\rho u + \rho_a (u - u_a)}
 
 
 The equations are solved using
