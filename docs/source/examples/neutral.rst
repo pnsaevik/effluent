@@ -7,17 +7,17 @@ concentration and momentum is gradually declining as the plume mixes with the
 surrounding waters.
 
 To run the example, create input files as described below, and run
-:code:`python -m effluent config.yaml` from the command line. Alternatively,
-execute the statement :code:`effluent.run("config.yaml")` from within python.
+:code:`python -m effluent config.toml` from the command line. Alternatively,
+execute the statement :code:`effluent.run("config.toml")` from within python.
 
-Input files: **config.yaml**, **pipe.csv**, **ambient.csv**
+Input files: **config.toml**, **pipe.csv**, **ambient.csv**
 
 Output file: **out.csv**
 
-Contents of **config.yaml**:
+Contents of **config.toml**:
 
-.. literalinclude:: ../../../tests/examples/neutral/config.yaml
-    :language: yaml
+.. literalinclude:: ../../../tests/examples/neutral/config.toml
+    :language: toml
 
 Contents of **pipe.csv**:
 
