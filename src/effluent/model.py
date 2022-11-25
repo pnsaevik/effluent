@@ -445,8 +445,8 @@ class InitialValueProblem:
         # Define coefficients
         beta_t = 0.16   # Entrainment coefficient, co-flow
         beta_n = 0.4    # Entrainment coefficient, cross-flow
-        K_t = 0.85      # Added mass coefficient, tangential gravity pull
-        K_n = 0.5       # Added mass coefficient, normal gravity pull
+        K_t = 0.85      # Added mass coefficient, tangential gravity pull (= 1 / [1 + k_t])
+        K_n = 0.5       # Added mass coefficient, normal gravity pull (= 1 / [1 + k_n])
 
         # Extract ambient velocity and density
         z_min, z_max = self.ambient.depth[[0, -1]].values
@@ -456,19 +456,19 @@ class InitialValueProblem:
         rho_a = ambient.dens.values
 
         # Compute added mass coefficient
-        speed_horz2 = u*u + v*v
-        speed_vert2 = w*w
-        speed2 = speed_horz2 + speed_vert2
-        K = K_n * speed_horz2 / speed2 + K_t * speed_vert2 / speed2
+        u2_PLUS_v2 = u*u + v*v
+        w2 = w*w
+        sqnorm_uvw = u2_PLUS_v2 + w2
+        K = K_n * u2_PLUS_v2 / sqnorm_uvw + K_t * w2 / sqnorm_uvw
 
         # Compute flow difference in tangential and normal direction
-        diff_u = u - u_a
-        diff_v = v - v_a
-        diff_vel2 = diff_u*diff_u + diff_v*diff_v + speed_vert2
-        speed = np.sqrt(speed2)
-        diff_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
-        diff_u_n2 = diff_vel2 - diff_u_t * diff_u_t
-        diff_u_n = np.sqrt(np.maximum(0, diff_u_n2))
+        delta_u = u - u_a
+        delta_v = v - v_a
+        sqnorm_delta_uvw = delta_u*delta_u + delta_v*delta_v + w2
+        speed = np.sqrt(sqnorm_uvw)
+        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        sq_delta_u_n = sqnorm_delta_uvw - delta_u_t * delta_u_t
+        delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
 
         # Displacement
         ddt_x = u
@@ -476,7 +476,7 @@ class InitialValueProblem:
         ddt_z = w
 
         # Jet expansion rate (entrainment rate)
-        ddt_R = beta_t * diff_u_t + beta_n * diff_u_n
+        ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
 
         # Conservation of mass
         ddt_A_div_A = 2 * ddt_R / R
