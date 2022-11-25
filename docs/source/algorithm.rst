@@ -53,7 +53,7 @@ ambient fluid, which can be decomposed into a tangential and normal component.
 The tangential component of the velocity difference is responsible for
 *shear entrainment*, while the normal component is responsible for
 *vortex entrainment*. To combine the two processes, we employ the
-*additive hypothesis*,
+following entrainment hypothesis,
 
 .. math ::
     :label: entrainment
@@ -65,7 +65,17 @@ where :math:`\beta_t` is determined by :confval:`model.beta_t`,
 :math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
 is the difference between jet velocity and ambient velocity in the tangential
 (along-jet) direction, and :math:`\Delta u_n` is the velocity difference in
-the normal (across-jet) direction.
+the normal (across-jet) direction:
+
+.. math ::
+    :label: delta_t
+
+    \Delta u_t = \left| \sqrt{u^2 + v^2 + w^2} - \frac{uu_a+vv_a}{\sqrt{u^2 + v^2 + w^2}} \right|
+
+.. math ::
+    :label: delta_n
+
+    \Delta u_n = \sqrt{(u - u_a)^2 + (v - v_a)^2 + w^2 - \Delta u_t^2}
 
 Conservation of mass
 ====================
@@ -121,7 +131,7 @@ acceleration. The term depends on the inclination angle of the jet,
 .. math ::
     :label: addmass
 
-    K = \frac{1}{1 + k_n} \cdot \frac{u^2 + v^2}{u^2 + v^2 + w^2} + \frac{1}{1 + k_t} \cdot \frac{w^2}{u^2 + v^2 + w^2},
+    K = \frac{1}{u^2 + v^2 + w^2}\left( \frac{u^2 + v^2}{1 + k_n} + \frac{w^2}{1 + k_t} \right),
 
 where :math:`k_n` is determined by :confval:`model.mass_n`
 and :math:`k_t` is determined by :confval:`model.mass_t`.
