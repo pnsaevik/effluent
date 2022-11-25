@@ -2,7 +2,7 @@
 Algorithm
 ===================
 
-Our derivation closely follows |lee2003|_.
+Our derivation closely follows Chapter 9 of |lee2003|_.
 The jet discharge is divided into small computational units, or fluid elements.
 Each element is a thin cross-sectional slice of the jet which moves and expands
 with the flow. The boundaries of the element are constructed so that
@@ -37,17 +37,26 @@ Since the top-hat formulation is easier to work with and yields equivalent
 results, we use this formulation in the following derivation. The
 end results can be converted back to a gaussian distribution if required.
 
+Buoyant jets eventually develop a non-gaussian, kidney shaped cross sectional
+profile with a double peak of concentration maxima. In this case, we identify
+the plume boundary with the turbulent interface where the intermittency factor
+is 50 %.
+
 
 Jet expansion rate
 ==================
 
 A turbulent jet expands as it moves through the ambient fluid due to
 the entrainment of surrounding water masses at the edges of the jet.
-Experiments show that the jet quickly develop a
-gaussian profile, which expands laterally at a rate proportional to its speed.
-Using the top hat profile, we can express this relation as
+Entrainment is driven by the velocity difference between the jet and the
+ambient fluid, which can be decomposed into a tangential and normal component.
+The tangential component of the velocity difference is responsible for
+*shear entrainment*, while the normal component is responsible for
+*vortex entrainment*. To combine the two processes, we employ the
+following entrainment hypothesis,
 
 .. math ::
+    :label: entrainment
 
     \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n,
 
@@ -56,7 +65,17 @@ where :math:`\beta_t` is determined by :confval:`model.beta_t`,
 :math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
 is the difference between jet velocity and ambient velocity in the tangential
 (along-jet) direction, and :math:`\Delta u_n` is the velocity difference in
-the normal (across-jet) direction.
+the normal (across-jet) direction:
+
+.. math ::
+    :label: delta_t
+
+    \Delta u_t = \left| \sqrt{u^2 + v^2 + w^2} - \frac{uu_a+vv_a}{\sqrt{u^2 + v^2 + w^2}} \right|
+
+.. math ::
+    :label: delta_n
+
+    \Delta u_n = \sqrt{(u - u_a)^2 + (v - v_a)^2 + w^2 - \Delta u_t^2}
 
 Conservation of mass
 ====================
@@ -65,6 +84,7 @@ Mass increase inside the computational element due to entrainment of ambient
 water masses can be expressed as
 
 .. math ::
+    :label: masscons
 
     \frac{d}{dt}(\rho V) = \rho_a \frac{dV}{dt},
 
@@ -80,10 +100,14 @@ Change in horizontal momentum due to entrainment of ambient water masses can be
 expressed as
 
 .. math ::
+    :label: momcons_u
 
-    \frac{d}{dt}(\rho u V) =&\, \rho_a u_a \frac{dV}{dt}
+    \frac{d}{dt}(\rho u V) = \rho_a u_a \frac{dV}{dt}
 
-    \frac{d}{dt}(\rho v V) =&\, \rho_a v_a \frac{dV}{dt}
+.. math ::
+    :label: momcons_v
+
+    \frac{d}{dt}(\rho v V) = \rho_a v_a \frac{dV}{dt}
 
 where :math:`u` is the horizontal velocity in the direction of the pipe and
 :math:`v` is the horizontal transverse velocity with positive direction to the
@@ -93,6 +117,7 @@ We assume that the ambient vertical velocity is zero. Vertical momentum change
 due to gravity is expressed as
 
 .. math ::
+    :label: momcons_w
 
     \frac{d}{dt}(\rho w V) = V K (\rho - \rho_a) g
 
@@ -104,8 +129,9 @@ plume also stirs up motion of water outside the plume, slowing down the
 acceleration. The term depends on the inclination angle of the jet,
 
 .. math ::
+    :label: addmass
 
-    K = k_n \frac{u^2 + v^2}{u^2 + v^2 + w^2} + k_t \frac{w^2}{u^2 + v^2 + w^2},
+    K = \frac{1}{u^2 + v^2 + w^2}\left( \frac{u^2 + v^2}{1 + k_n} + \frac{w^2}{1 + k_t} \right),
 
 where :math:`k_n` is determined by :confval:`model.mass_n`
 and :math:`k_t` is determined by :confval:`model.mass_t`.
@@ -113,21 +139,17 @@ and :math:`k_t` is determined by :confval:`model.mass_t`.
 Conservation of volume
 =======================
 
-By continuity, the thickness :math:`s` of the computational element is
+By continuity, the thickness of the computational element is
 proportional to the faceward velocity :math:`u`. The volume :math:`V` of the
 element can therefore be expressed as
 
 .. math ::
+    :label: voldef
 
     V = \frac{s_0}{u_0} u \pi R^2,
 
-where the subscript :math:`0` denote initial quantities. The rate of volume
-change can be expressed as
-
-.. math ::
-
-    \frac{1}{V} \frac{dV}{dt} = \frac{1}{u} \frac{du}{dt} + \frac{2}{R} \frac{dR}{dt}.
-
+where :math:`s_0` is the initial thickness and :math:`u_0` the initial
+velocity.
 
 Solving the equations
 ======================
@@ -149,16 +171,20 @@ Variable        Description
 :math:`R`       Radius of the computational element
 ==============  =============================================================
 
-The differential equations are reformulated in terms of the primary variables,
-and the remaining variables are computed from the primary variables. Using the
+The differential equations are reformulated in terms of the primary variables.
+Remaining variables are computed from the primary variables. Using the
 vector forms
 
 .. math ::
+    :label: xvec
+
     \mathbf{x} = x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
 
 and
 
 .. math ::
+    :label: uvec
+
     \mathbf{u} = u\mathbf{i} + v\mathbf{j} + w\mathbf{k},
 
 we can write the primary equations as:
@@ -167,29 +193,43 @@ Displacement
 ---------------
 
 .. math ::
+    :label: sol_displ
 
-    \tag{1} \frac{d\mathbf{x}}{dt} = \mathbf{u}
+    \frac{d\mathbf{x}}{dt} = \mathbf{u}
 
 Conservation of momentum:
 --------------------------
 
 .. math ::
+    :label: sol_mom
 
-    \tag{2} \frac{d\mathbf{u}}{dt} = \frac{1}{V} \frac{dV}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
+    \frac{d\mathbf{u}}{dt} = \frac{1}{V} \frac{dV}{dt}  \frac{\rho_a}{\rho} (\mathbf{u}_a - \mathbf{u}) + \frac{1}{\rho} K (\rho - \rho_a) \mathbf{g}
 
 Conservation of mass
 ------------------------
 
 .. math ::
+    :label: sol_mass
 
-    \tag{3} \frac{d\rho}{dt} = \frac{1}{V} \frac{dV}{dt} (\rho_a - \rho)
+    \frac{d\rho}{dt} = \frac{1}{V} \frac{dV}{dt} (\rho_a - \rho)
 
 Jet expansion rate
 ---------------------
 
 .. math ::
+    :label: sol_jet
 
-    \tag{4} \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
+    \frac{dR}{dt} = \beta_t \Delta u_t + \beta_n \Delta u_n
+
+|
+
+In addition we utilize the following expression for the rate of volume change,
+which is derived from :eq:`masscons`, :eq:`momcons_u` and :eq:`voldef`:
+
+.. math ::
+    :label: sol_voldef
+
+    \frac{1}{V}\frac{dV}{dt} = \frac{1}{R}\frac{dR}{dt}\frac{2 \rho u}{\rho u + \rho_a (u - u_a)}
 
 
 The equations are solved using

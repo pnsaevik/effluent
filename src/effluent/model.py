@@ -440,35 +440,35 @@ class InitialValueProblem:
         # noinspection PyUnusedLocal
         t = t
         y_in = y
-        x, y, z, u, v, w, d, r = y_in
+        x, y, z, u, v, w, rho, R = y_in
 
         # Define coefficients
         beta_t = 0.16   # Entrainment coefficient, co-flow
         beta_n = 0.4    # Entrainment coefficient, cross-flow
-        k_t = 0.85      # Added mass coefficient, tangential gravity pull
-        k_n = 0.5       # Added mass coefficient, normal gravity pull
+        K_t = 0.85      # Added mass coefficient, tangential gravity pull (= 1 / [1 + k_t])
+        K_n = 0.5       # Added mass coefficient, normal gravity pull (= 1 / [1 + k_n])
 
         # Extract ambient velocity and density
         z_min, z_max = self.ambient.depth[[0, -1]].values
         ambient = self.ambient.interp(depth=np.clip(z, z_min, z_max))
         u_a = ambient.u.values
         v_a = ambient.v.values
-        d_a = ambient.dens.values
+        rho_a = ambient.dens.values
 
         # Compute added mass coefficient
-        speed_horz2 = u*u + v*v
-        speed_vert2 = w*w
-        speed2 = speed_horz2 + speed_vert2
-        K = k_n * speed_horz2 / speed2 + k_t * speed_vert2 / speed2
+        squared_horizontal_speed = u*u + v*v
+        w2 = w*w
+        squared_speed = squared_horizontal_speed + w2
+        K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
 
         # Compute flow difference in tangential and normal direction
-        diff_u = u - u_a
-        diff_v = v - v_a
-        diff_vel2 = diff_u*diff_u + diff_v*diff_v + speed_vert2
-        speed = np.sqrt(speed2)
-        diff_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
-        diff_u_n2 = diff_vel2 - diff_u_t * diff_u_t
-        diff_u_n = np.sqrt(np.maximum(0, diff_u_n2))
+        delta_u = u - u_a
+        delta_v = v - v_a
+        squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
+        speed = np.sqrt(squared_speed)
+        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
+        delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
 
         # Displacement
         ddt_x = u
@@ -476,17 +476,21 @@ class InitialValueProblem:
         ddt_z = w
 
         # Jet expansion rate (entrainment rate)
-        ddt_r = beta_t * diff_u_t + beta_n * diff_u_n
+        ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
+
+        # Conservation of volume
+        ddt_log_R2 = 2 * ddt_R / R
+        rho_ratio = rho_a / rho
+        ddt_log_V = ddt_log_R2 * u / (u + rho_ratio * delta_u)
 
         # Conservation of mass
-        ddt_A_div_A = 2 * ddt_r / r
-        ddt_d = ddt_A_div_A * (d_a - d)
+        ddt_rho = ddt_log_V * (rho_a - rho)
 
         # Conservation of momentum
-        prefix = ddt_A_div_A * d_a / d
-        ddt_u = prefix * (u_a - u)
-        ddt_v = prefix * (v_a - v)
-        ddt_w = -prefix * w + K * (1 - d_a / d) * 9.81
+        prefix = -ddt_log_V * rho_ratio
+        ddt_u = prefix * delta_u
+        ddt_v = prefix * delta_v
+        ddt_w = prefix * w + K * (1 - rho_ratio) * 9.81
 
-        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_r])
+        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_rho, ddt_R])
         return ddt_y
