@@ -456,18 +456,18 @@ class InitialValueProblem:
         rho_a = ambient.dens.values
 
         # Compute added mass coefficient
-        u2_PLUS_v2 = u*u + v*v
+        squared_horizontal_speed = u*u + v*v
         w2 = w*w
-        sqnorm_uvw = u2_PLUS_v2 + w2
-        K = K_n * u2_PLUS_v2 / sqnorm_uvw + K_t * w2 / sqnorm_uvw
+        squared_speed = squared_horizontal_speed + w2
+        K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
 
         # Compute flow difference in tangential and normal direction
         delta_u = u - u_a
         delta_v = v - v_a
-        sqnorm_delta_uvw = delta_u*delta_u + delta_v*delta_v + w2
-        speed = np.sqrt(sqnorm_uvw)
+        squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
+        speed = np.sqrt(squared_speed)
         delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
-        sq_delta_u_n = sqnorm_delta_uvw - delta_u_t * delta_u_t
+        sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
         delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
 
         # Displacement
@@ -478,15 +478,19 @@ class InitialValueProblem:
         # Jet expansion rate (entrainment rate)
         ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
 
+        # Conservation of volume
+        ddt_log_R2 = 2 * ddt_R / R
+        rho_ratio = rho_a / rho
+        ddt_log_V = ddt_log_R2 * u / (u + rho_ratio * delta_u)
+
         # Conservation of mass
-        ddt_A_div_A = 2 * ddt_R / R
-        ddt_d = ddt_A_div_A * (rho_a - rho)
+        ddt_rho = ddt_log_V * (rho_a - rho)
 
         # Conservation of momentum
-        prefix = ddt_A_div_A * rho_a / rho
-        ddt_u = prefix * (u_a - u)
-        ddt_v = prefix * (v_a - v)
-        ddt_w = -prefix * w + K * (1 - rho_a / rho) * 9.81
+        prefix = -ddt_log_V * rho_ratio
+        ddt_u = prefix * delta_u
+        ddt_v = prefix * delta_v
+        ddt_w = prefix * w + K * (1 - rho_ratio) * 9.81
 
-        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_d, ddt_R])
+        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_rho, ddt_R])
         return ddt_y
