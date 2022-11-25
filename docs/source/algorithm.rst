@@ -3,7 +3,7 @@ Algorithm
 ===================
 
 Our derivation closely follows Chapter 9 of |lee2003|_.
-The jet discharge is divided into small computational units, or fluid elements.
+The jet discharge is divided into small computational units called fluid elements.
 Each element is a thin cross-sectional slice of the jet which moves and expands
 with the flow. The boundaries of the element are constructed so that
 
@@ -24,7 +24,8 @@ Cross-sectional profile
 We employ the *top hat profile* simplification. This
 means we assume constant tracer concentration inside the computational element
 and zero outside it, instead of the more realistic gaussian distribution.
-It turns out that both the gaussian and top-hat cases are equivalent if
+It turns out that the conservation equations for the gaussian and top-hat
+profiles are equivalent if
 
 -   The equations are expressed in terms of averages over the computational
     element
@@ -64,18 +65,20 @@ where :math:`\beta_t` is determined by :confval:`model.beta_t`,
 :math:`\beta_n` is determined by :confval:`model.beta_n`,
 :math:`R` is the jet radius, :math:`t` is time, :math:`\Delta u_t`
 is the difference between jet velocity and ambient velocity in the tangential
-(along-jet) direction, and :math:`\Delta u_n` is the velocity difference in
-the normal (across-jet) direction:
+(along-jet) direction,
 
 .. math ::
     :label: delta_t
 
-    \Delta u_t = \left| \sqrt{u^2 + v^2 + w^2} - \frac{uu_a+vv_a}{\sqrt{u^2 + v^2 + w^2}} \right|
+    \Delta u_t = \left| \sqrt{u^2 + v^2 + w^2} - \frac{uu_a+vv_a}{\sqrt{u^2 + v^2 + w^2}} \right|,
+
+and :math:`\Delta u_n` is the velocity difference in the normal (across-jet)
+direction,
 
 .. math ::
     :label: delta_n
 
-    \Delta u_n = \sqrt{(u - u_a)^2 + (v - v_a)^2 + w^2 - \Delta u_t^2}
+    \Delta u_n = \sqrt{(u - u_a)^2 + (v - v_a)^2 + w^2 - \Delta u_t^2}.
 
 Conservation of mass
 ====================
@@ -102,12 +105,12 @@ expressed as
 .. math ::
     :label: momcons_u
 
-    \frac{d}{dt}(\rho u V) = \rho_a u_a \frac{dV}{dt}
+    \frac{d}{dt}(\rho u V) = \rho_a u_a \frac{dV}{dt},
 
 .. math ::
     :label: momcons_v
 
-    \frac{d}{dt}(\rho v V) = \rho_a v_a \frac{dV}{dt}
+    \frac{d}{dt}(\rho v V) = \rho_a v_a \frac{dV}{dt},
 
 where :math:`u` is the horizontal velocity in the direction of the pipe and
 :math:`v` is the horizontal transverse velocity with positive direction to the
@@ -119,7 +122,7 @@ due to gravity is expressed as
 .. math ::
     :label: momcons_w
 
-    \frac{d}{dt}(\rho w V) = V K (\rho - \rho_a) g
+    \frac{d}{dt}(\rho w V) = V K (\rho - \rho_a) g,
 
 where :math:`w` is the vertical velocity with positive direction downwards and
 :math:`g` is the acceleration of gravity. :math:`K` is the added mass
