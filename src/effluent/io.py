@@ -21,6 +21,7 @@ def load_config(fname_or_dict):
     conf = {}
     conf['pipe'] = input_conf['pipe']
     conf['ambient'] = input_conf['ambient']
+    conf['output'] = input_conf['output']
 
     # --- Solver ---
 
@@ -29,12 +30,6 @@ def load_config(fname_or_dict):
 
     conf['solver'] = {}
     conf['solver']['steps'] = np.arange(0, stagnation, resolution)
-
-    # --- Output ---
-
-    conf['output'] = {}
-    conf['output']['file'] = input_conf['output']['file']
-    conf['output']['format'] = Path(input_conf['output']['file']).suffix[1:]
 
     # --- Time stepper ---
 
@@ -181,24 +176,29 @@ class Ambient:
 class Output:
     @staticmethod
     def from_config(conf):
-        subclasses = {'csv': OutputCSV, 'nc': OutputNC}
-        subclass = subclasses.get(conf.pop('format'), subclasses['nc'])
-        return subclass(**conf)
+        if 'csv' in conf:
+            return OutputCSV.from_config(conf)
+        elif 'nc' in conf:
+            return OutputNC.from_config(conf)
+        else:
+            raise ValueError("No output file name given")
 
 
 class OutputCSV(Output):
-    def __init__(self, file, diskless=False):
-        self.file = file
-        self.dset = None
+    def __init__(self, file):
+        if isinstance(file, str):
+            self.file = file
+            self.dset = None
+        else:
+            self.file = None
+            self.dset = file
+
         self._blank_file = True
-        self.diskless = diskless
 
     def __enter__(self):
-        if self.diskless:
-            self.dset = io.StringIO()
-        else:
+        if self.dset is None:
             self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
-        self._blank_file = True
+            self._blank_file = True
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -208,6 +208,11 @@ class OutputCSV(Output):
         if self.dset is not None:
             self.dset.close()
             self.dset = None
+
+    @staticmethod
+    def from_config(conf):
+        out = OutputCSV(conf['csv']['file'])
+        return out
 
     def write(self, time, result):
         df = result.to_dataframe()
@@ -230,6 +235,10 @@ class OutputNC(Output):
         self.dset = None
         self._blank_file = True
         self.diskless = diskless
+
+    @staticmethod
+    def from_config(conf):
+        pass
 
     def __enter__(self):
         self.dset = nc.Dataset(filename=self.file, mode='w', diskless=self.diskless)

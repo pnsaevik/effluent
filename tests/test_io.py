@@ -5,6 +5,7 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 import xarray as xr
+from textwrap import dedent
 
 import effluent.io
 
@@ -125,42 +126,6 @@ class Test_OutputNC:
             assert rt.tolist() == [0, 1]
 
 
-class Test_OutputCSV:
-    @pytest.fixture()
-    def result(self):
-        return xr.Dataset(
-            data_vars=dict(
-                x=xr.Variable('t', [0, 0]),
-                y=xr.Variable('t', [0, 0]),
-                z=xr.Variable('t', [0, 0]),
-                u=xr.Variable('t', [0, 0]),
-                v=xr.Variable('t', [0, 0]),
-                w=xr.Variable('t', [0, 0]),
-                density=xr.Variable('t', [0, 0]),
-                radius=xr.Variable('t', [0, 0]),
-            ),
-            coords=dict(
-                t=xr.Variable('t', [1000, 2000]),
-            ),
-        )
-
-    def test_can_append_variables(self, result):
-        from uuid import uuid4
-        with effluent.io.OutputCSV(uuid4(), diskless=True) as out:
-            out.write(time=0, result=result)
-            out.write(time=1, result=result)
-
-            out.dset.seek(0)
-            lines = out.dset.readlines()
-
-        assert len(lines) == 5
-        assert lines[0] == 'release_time,t,x,y,z,u,v,w,density,radius\n'
-        assert lines[1] == '0,1000,0,0,0,0,0,0,0,0\n'
-        assert lines[2] == '0,2000,0,0,0,0,0,0,0,0\n'
-        assert lines[3] == '1,1000,0,0,0,0,0,0,0,0\n'
-        assert lines[4] == '1,2000,0,0,0,0,0,0,0,0\n'
-
-
 class Test_Pipe_from_config:
     def test_explicit_mapping_with_arrays(self):
         conf = dict(
@@ -261,3 +226,42 @@ class Test_Ambient_from_config:
         p = effluent.io.Ambient.from_config(conf)
         dset = p.select(time=600)
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
+
+
+class Test_Output_from_config:
+    @pytest.fixture()
+    def result(self):
+        return xr.Dataset(
+            data_vars=dict(
+                x=xr.Variable('t', [1, 2]),
+                y=xr.Variable('t', [3, 4]),
+                z=xr.Variable('t', [5, 6]),
+                u=xr.Variable('t', [7, 8]),
+                v=xr.Variable('t', [9, 1]),
+                w=xr.Variable('t', [2, 3]),
+                density=xr.Variable('t', [4, 5]),
+                radius=xr.Variable('t', [6, 7]),
+            ),
+            coords=dict(
+                t=xr.Variable('t', [1000, 2000]),
+            ),
+        )
+
+    def test_option_csv_file(self, result):
+        buf = io.StringIO()
+        conf = dict(
+            csv=dict(file=buf),
+        )
+
+        with effluent.io.Output.from_config(conf) as out:
+            out.write(time=0, result=result)
+            out.write(time=1, result=result)
+            txt = buf.getvalue()
+
+        assert txt == dedent("""
+            release_time,t,x,y,z,u,v,w,density,radius
+            0,1000,1,3,5,7,9,2,4,6
+            0,2000,2,4,6,8,1,3,5,7
+            1,1000,1,3,5,7,9,2,4,6
+            1,2000,2,4,6,8,1,3,5,7
+         """)[1:]
