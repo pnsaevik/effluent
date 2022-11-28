@@ -6,6 +6,7 @@ import xarray as xr
 import logging
 from pathlib import Path
 import netCDF4 as nc
+import tomli as toml
 
 
 logger = logging.getLogger(__name__)
@@ -38,9 +39,8 @@ def load_config(fname_or_dict):
     if isinstance(fname_or_dict, dict):
         input_conf = fname_or_dict
     else:
-        import tomli
         with open(fname_or_dict, 'rb') as fp:
-            input_conf = tomli.load(fp)
+            input_conf = toml.load(fp)
 
     # noinspection PyDictCreation
     conf = {}
