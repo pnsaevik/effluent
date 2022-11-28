@@ -111,7 +111,7 @@ class Pipe:
     @staticmethod
     def from_config(conf):
         if 'csv' in conf:
-            return Pipe.from_csv_file(**conf)
+            return Pipe.from_csv_file(**conf['csv'])
         else:
             return Pipe.from_mapping(**conf)
 

@@ -1,5 +1,5 @@
 # Characteristics of the pipe and the effluent flow
-pipe = "pipe.csv"
+pipe.csv.file = "pipe.csv"
 
 # Characteristics of the ambient water masses
 ambient = "ambient.csv"
