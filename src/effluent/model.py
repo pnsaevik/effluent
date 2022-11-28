@@ -45,23 +45,7 @@ def load_config(fname_or_dict):
     # noinspection PyDictCreation
     conf = {}
     conf['pipe'] = input_conf['pipe']
-
-    # --- Ambient ---
-
-    c = input_conf['ambient']
-
-    # Interpret input as a file name if there is only one input string
-    if isinstance(c, str):
-        c = dict(
-            file=c,
-            format=Path(c).suffix[1:]
-        )
-
-    # Add standard format specifier if not existing
-    if 'format' not in c:
-        c['format'] = 'dict'
-
-    conf['ambient'] = c
+    conf['ambient'] = input_conf['ambient']
 
     # --- Solver ---
 
@@ -117,11 +101,7 @@ class Pipe:
             skip_blank_lines=True,
             comment='#',
         )
-
-        df['u'], df['w'] = Pipe._compute_uw(df['flow'].values, df['decline'].values)
-        df = df.drop(columns=['flow', 'decline'])
-        dset = xr.Dataset.from_dataframe(df)
-        return Pipe(dset)
+        return Pipe.from_dataframe(df)
 
     @staticmethod
     def _compute_uw(flow, decline):
@@ -158,14 +138,35 @@ class Pipe:
 
 class Ambient:
     def __init__(self, dset):
-        self.dset = dset
+        self._dset = dset
+        self._tmin = dset.time[0].values.item()
+        self._tmax = dset.time[-1].values.item()
 
     @staticmethod
     def from_config(conf):
-        fmt = conf.pop('format')
-        factories = {'dict': Ambient.from_mapping, 'csv': Ambient.from_csv_file}
-        factory = factories[fmt]
-        return factory(**conf)
+        if 'csv' in conf:
+            return Ambient.from_csv_file(**conf['csv'])
+        elif 'nc' in conf:
+            return Ambient.from_nc_file(**conf['nc'])
+        else:
+            return Ambient.from_mapping(**conf)
+
+    @staticmethod
+    def from_nc_file(file):
+        dset = xr.load_dataset(file)
+        return Ambient.from_dataset(dset)
+
+    @staticmethod
+    def from_dataframe(df):
+        dset = xr.Dataset.from_dataframe(df)
+        return Ambient.from_dataset(dset)
+
+    @staticmethod
+    def from_dataset(dset):
+        dset = dset.rename_vars(coflow='u', crossflow='v')
+        time = dset.time.values
+        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        return Ambient(dset)
 
     @staticmethod
     def from_csv_file(file):
@@ -178,42 +179,28 @@ class Ambient:
             skip_blank_lines=True,
             comment='#',
         )
-
-        dset = xr.Dataset.from_dataframe(df)
-        dset = dset.rename_vars(coflow='u', crossflow='v')
-        return Ambient(dset)
+        return Ambient.from_dataframe(df)
 
     @staticmethod
     def from_mapping(time, depth, coflow, crossflow, dens):
-        depth = np.array(depth)
-        time = np.array(time)
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
         shp = (len(time), len(depth))
         u = np.broadcast_to(coflow, shp)
         v = np.broadcast_to(crossflow, shp)
+        d = np.broadcast_to(dens, shp)
 
         dset = xr.Dataset(
+            coords=dict(time=time, depth=depth),
             data_vars=dict(
-                u=xr.Variable(('time', 'depth'), u),
-                v=xr.Variable(('time', 'depth'), v),
-                dens=xr.Variable(('time', 'depth'), dens),
+                coflow=xr.Variable(('time', 'depth'), u),
+                crossflow=xr.Variable(('time', 'depth'), v),
+                dens=xr.Variable(('time', 'depth'), d),
             ),
-            coords=dict(
-                depth=xr.Variable('depth', depth),
-                time=xr.Variable('time', time),
-            )
         )
-        return Ambient(dset)
+        return Ambient.from_dataset(dset)
 
     def select(self, time):
-        return interp_time(self.dset, time)
-
-
-def interp_time(dset, time):
-    time_min = dset.time[0].values.item()
-    time_max = dset.time[-1].values.item()
-    clipped_time = np.clip(time, time_min, time_max)
-    return dset.interp(time=clipped_time)
+        clipped_time = np.clip(time, self._tmin, self._tmax)
+        return self._dset.interp(time=clipped_time)
 
 
 class Output:
@@ -387,6 +374,8 @@ class InitialValueProblem:
         self.steps = steps
         self.pipe = pipe
         self.ambient = ambient
+        self._zmin = self.ambient.depth[0].values
+        self._zmax = self.ambient.depth[1].values
         self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
         self.method = 'RK45'
 
@@ -441,8 +430,8 @@ class InitialValueProblem:
         K_n = 0.5       # Added mass coefficient, normal gravity pull (= 1 / [1 + k_n])
 
         # Extract ambient velocity and density
-        z_min, z_max = self.ambient.depth[[0, -1]].values
-        ambient = self.ambient.interp(depth=np.clip(z, z_min, z_max))
+        clipped_depth = np.clip(z, self._zmin, self._zmax)
+        ambient = self.ambient.interp(depth=clipped_depth)
         u_a = ambient.u.values
         v_a = ambient.v.values
         rho_a = ambient.dens.values

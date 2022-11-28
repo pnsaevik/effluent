@@ -208,17 +208,58 @@ class Test_Pipe_from_config:
 
 
 class Test_Ambient_from_config:
-    def test_can_interpret_mapping(self):
+    def test_explicit_mapping_with_arrays(self):
         conf = dict(
-            format='dict',
-            time=[0, 1],
-            depth=[0],
-            coflow=[[0], [0]],
-            crossflow=[[0], [0]],
-            dens=[[0], [0]],
+            time=[0, 1200],
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2], [3, 4, 5]],
+            crossflow=[[6, 7, 8], [9, 0, 1]],
+            dens=[[2, 3, 4], [5, 6, 7]],
         )
         p = model.Ambient.from_config(conf)
-        assert set(p.dset.variables) == {'u', 'v', 'depth', 'dens', 'time'}
+        dset = p.select(time=600)
+        assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
+
+    def test_explicit_mapping_with_singlenums(self):
+        conf = dict(
+            time=[0, 1200],
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2], [3, 4, 5]],
+            crossflow=[[6, 7, 8], [9, 0, 1]],
+            dens=3,
+        )
+        p = model.Ambient.from_config(conf)
+        dset = p.select(time=600)
+        assert dset.dens.values.tolist() == [3, 3, 3]
+
+    def test_csv_file(self):
+        buf = io.StringIO("""
+            time, depth, coflow, crossflow, dens
+               0,     0,      0,         6,    2
+               0,    10,      1,         7,    3
+               0,    20,      2,         8,    4
+            1200,     0,      3,         9,    5
+            1200,    10,      4,         0,    6
+            1200,    20,      5,         1,    7
+        """)
+        conf = dict(csv=dict(file=buf))
+        p = model.Ambient.from_config(conf)
+        dset = p.select(time=600)
+        assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
+
+    def test_nc_file(self):
+        buf = xr.Dataset(
+            coords=dict(time=[0, 1200], depth=[0, 10, 20]),
+            data_vars=dict(
+                coflow=xr.Variable(('time', 'depth'), [[0, 1, 2], [3, 4, 5]]),
+                crossflow=xr.Variable(('time', 'depth'), [[6, 7, 8], [9, 0, 1]]),
+                dens=xr.Variable(('time', 'depth'), [[2, 3, 4], [5, 6, 7]]),
+            )
+        ).to_netcdf()
+        conf = dict(nc=dict(file=buf))
+        p = model.Ambient.from_config(conf)
+        dset = p.select(time=600)
+        assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
 
 class Test_IVP_solve:

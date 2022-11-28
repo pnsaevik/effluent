@@ -2,7 +2,7 @@
 pipe.csv.file = "pipe.csv"
 
 # Characteristics of the ambient water masses
-ambient = "ambient.csv"
+ambient.csv.file = "ambient.csv"
 
 # Output options
 [output]
