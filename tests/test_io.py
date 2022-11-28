@@ -92,40 +92,6 @@ class Test_append_xr_to_nc:
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
 
 
-class Test_OutputNC:
-    @pytest.fixture()
-    def result(self):
-        return xr.Dataset(
-            data_vars=dict(
-                x=xr.Variable('t', [0, 0]),
-                y=xr.Variable('t', [0, 0]),
-                z=xr.Variable('t', [0, 0]),
-                u=xr.Variable('t', [0, 0]),
-                v=xr.Variable('t', [0, 0]),
-                w=xr.Variable('t', [0, 0]),
-                density=xr.Variable('t', [0, 0]),
-                radius=xr.Variable('t', [0, 0]),
-            ),
-            coords=dict(
-                t=xr.Variable('t', [1000, 2000]),
-            ),
-        )
-
-    def test_can_add_attributes(self, result):
-        from uuid import uuid4
-        with effluent.io.OutputNC(uuid4(), diskless=True) as out:
-            out.write(time=0, result=result)
-            assert out.dset.variables['z'].positive == 'down'
-
-    def test_can_append_variables(self, result):
-        from uuid import uuid4
-        with effluent.io.OutputNC(uuid4(), diskless=True) as out:
-            out.write(time=0, result=result)
-            out.write(time=1, result=result)
-            rt = out.dset.variables['release_time'][:]
-            assert rt.tolist() == [0, 1]
-
-
 class Test_Pipe_from_config:
     def test_explicit_mapping_with_arrays(self):
         conf = dict(
@@ -265,3 +231,20 @@ class Test_Output_from_config:
             1,1000,1,3,5,7,9,2,4,6
             1,2000,2,4,6,8,1,3,5,7
          """)[1:]
+
+    def test_option_nc_file(self, result):
+        buf = xr.Dataset()
+        conf = dict(
+            nc=dict(file=buf),
+        )
+
+        with effluent.io.Output.from_config(conf) as out:
+            out.write(time=0, result=result)
+            out.write(time=1, result=result)
+
+        assert buf.z.positive == 'down'
+        assert buf.z.dims == ('release_time', 't')
+        assert buf.z.shape == (2, 2)
+        assert buf.z.values.tolist() == [[5, 6], [5, 6]]
+        assert set(buf.data_vars) == {'x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius'}
+        assert set(buf.coords) == {'release_time', 't'}

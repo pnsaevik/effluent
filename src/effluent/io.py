@@ -230,18 +230,16 @@ class OutputCSV(Output):
 
 
 class OutputNC(Output):
-    def __init__(self, file, diskless=False):
-        self.file = file
-        self.dset = None
-        self._blank_file = True
-        self.diskless = diskless
+    def __init__(self, file):
+        from uuid import uuid4
 
-    @staticmethod
-    def from_config(conf):
-        pass
+        self.dset = None
+        self.xr_dset = file if isinstance(file, xr.Dataset) else None
+        self.diskless = not isinstance(file, str)
+        self.fname = file if isinstance(file, str) else uuid4()
 
     def __enter__(self):
-        self.dset = nc.Dataset(filename=self.file, mode='w', diskless=self.diskless)
+        self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
         self._blank_file = True
         return self
 
@@ -250,8 +248,16 @@ class OutputNC(Output):
 
     def close(self):
         if self.dset is not None:
+            if self.xr_dset is not None:
+                write_nc_to_xr(self.dset, self.xr_dset)
+
             self.dset.close()
             self.dset = None
+
+    @staticmethod
+    def from_config(conf):
+        out = OutputNC(conf['nc']['file'])
+        return out
 
     def write(self, time, result):
         result = result.assign_coords(release_time=time)
@@ -322,6 +328,21 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Write dataset attributes
     nc_dset.setncatts(xr_dset.attrs)
+
+
+def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
+    # Write variables
+    for name, nc_var in nc_dset.variables.items():
+        xr_var = xr.Variable(
+            dims=nc_var.dimensions,
+            data=nc_var[:],
+            attrs={k: nc_var.getncattr(k) for k in nc_var.ncattrs()},
+        )
+        xr_dset[name] = xr_var
+
+    # Write dataset attributes
+    for k in nc_dset.ncattrs():
+        xr_dset.attrs[k] = nc_dset.getncattr(k)
 
 
 def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
