@@ -1,7 +1,7 @@
 import xarray as xr
 import numpy as np
 
-from effluent import model
+import effluent.solver
 import pytest
 
 
@@ -65,37 +65,37 @@ class Test_IVP_solve:
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = model.InitialValueProblem(steps, pipe_dset_decl, ambient_dset_still)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_decl, ambient_dset_still)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
         steps = np.array([0, 10, 20])
-        ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_cross)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_cross)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
         steps = np.array([0, 10, 20])
-        ivp = model.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_coflow)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_coflow)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = model.InitialValueProblem(steps, pipe_dset_light, ambient_dset_still)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_light, ambient_dset_still)
         return ivp.solve()
 
     @pytest.fixture(scope='class')
     def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
         steps = np.linspace(0, 200, 11)
-        ivp = model.InitialValueProblem(steps, pipe_dset_light, ambient_dset_stratified)
+        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_light, ambient_dset_stratified)
         return ivp.solve()
 
     @staticmethod
