@@ -1,3 +1,5 @@
+import io
+
 import xarray as xr
 import netCDF4 as nc
 import numpy as np
@@ -161,12 +163,48 @@ class Test_OutputCSV:
 class Test_Pipe_from_config:
     def test_explicit_mapping_with_arrays(self):
         conf = dict(
-            time=[0, 1], flow=[2, 3], dens=[4, 5], diam=[6, 7], depth=[8, 9],
+            time=[0, 1200], flow=[2, 3], dens=[4, 5], diam=[6, 7], depth=[8, 9],
             decline=[10, 11],
         )
         p = model.Pipe.from_config(conf)
-        dset = p.select(time=0)
+        dset = p.select(time=600)
+        assert dset.dens.values == 4.5
+
+    def test_explicit_mapping_with_singlenums(self):
+        conf = dict(
+            time=[0, 1200], flow=[2, 3], dens=4, diam=6, depth=[8, 9],
+            decline=10,
+        )
+        p = model.Pipe.from_config(conf)
+        dset = p.select(time=600)
         assert dset.dens.values == 4
+
+    def test_csv_file(self):
+        buf = io.StringIO("""
+            time, flow, dens, diam, depth, decline
+               0,    1,    3,    5,     7,       9
+            1200,    2,    4,    6,     8,      10
+        """)
+        conf = dict(csv=dict(file=buf))
+        p = model.Pipe.from_config(conf)
+        dset = p.select(time=600)
+        assert dset.dens.values == 3.5
+
+    def test_nc_file(self):
+        buf = xr.Dataset(
+            coords=dict(time=[0, 1200]),
+            data_vars=dict(
+                flow=xr.Variable('time', [1, 2]),
+                dens=xr.Variable('time', [3, 4]),
+                diam=xr.Variable('time', [5, 6]),
+                depth=xr.Variable('time', [7, 8]),
+                decline=xr.Variable('time', [9, 10]),
+            ),
+        ).to_netcdf()
+        conf = dict(nc=dict(file=buf))
+        p = model.Pipe.from_config(conf)
+        dset = p.select(time=600)
+        assert dset.dens.values == 3.5
 
 
 class Test_Ambient_from_config:

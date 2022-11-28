@@ -96,8 +96,15 @@ class Pipe:
     def from_config(conf):
         if 'csv' in conf:
             return Pipe.from_csv_file(**conf['csv'])
+        elif 'nc' in conf:
+            return Pipe.from_nc_file(**conf['nc'])
         else:
             return Pipe.from_mapping(**conf)
+
+    @staticmethod
+    def from_nc_file(file):
+        dset = xr.load_dataset(file)
+        return Pipe.from_dataset(dset)
 
     @staticmethod
     def from_csv_file(file):
