@@ -159,18 +159,14 @@ class Test_OutputCSV:
 
 
 class Test_Pipe_from_config:
-    def test_can_interpret_mapping(self):
+    def test_explicit_mapping_with_arrays(self):
         conf = dict(
-            format='dict',
-            time=[0, 1],
-            flow=[0, 0],
-            dens=[0, 0],
-            decline=0,
-            diam=0,
-            depth=0,
+            time=[0, 1], flow=[2, 3], dens=[4, 5], diam=[6, 7], depth=[8, 9],
+            decline=[10, 11],
         )
         p = model.Pipe.from_config(conf)
-        assert set(p.dset.variables) == {'u', 'w', 'diam', 'depth', 'dens', 'time'}
+        dset = p.select(time=0)
+        assert dset.dens.values == 4
 
 
 class Test_Ambient_from_config:
@@ -361,4 +357,3 @@ class Test_IVP_solve:
         assert np.isnan(self.sign_of_change(r, 'w'))   # Vertical bouncing behaviour
         assert np.isnan(self.sign_of_change(r, 'density'))  # Bouncing behaviour
         assert self.sign_of_change(r, 'radius') == 1   # Radius increase
-

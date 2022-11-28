@@ -104,14 +104,16 @@ def load_config(fname_or_dict):
 
 class Pipe:
     def __init__(self, dset):
-        self.dset = dset
+        self._dset = dset
+        self._time_min = dset.time[0].values.item()
+        self._time_max = dset.time[-1].values.item()
 
     @staticmethod
     def from_config(conf):
-        fmt = conf.pop('format')
-        factories = {'dict': Pipe.from_mapping, 'csv': Pipe.from_csv_file}
-        factory = factories[fmt]
-        return factory(**conf)
+        if 'csv' in conf:
+            return Pipe.from_csv_file(**conf)
+        else:
+            return Pipe.from_mapping(**conf)
 
     @staticmethod
     def from_csv_file(file):
@@ -138,30 +140,29 @@ class Pipe:
         return u, w
 
     @staticmethod
-    def from_mapping(time, flow, dens, decline, diam, depth):
-        time = np.array(time)
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
-        shp = (len(time), )
-        flow = np.broadcast_to(flow, shp)
-        dens = np.broadcast_to(dens, shp)
-        u, w = Pipe._compute_uw(flow, np.array(decline))
+    def from_dataframe(df):
+        dset = xr.Dataset.from_dataframe(df)
+        return Pipe.from_dataset(dset)
 
-        dset = xr.Dataset(
-            data_vars=dict(
-                u=xr.Variable('time', u),
-                w=xr.Variable('time', w),
-                dens=xr.Variable('time', dens),
-                diam=xr.Variable((), diam),
-            ),
-            coords=dict(
-                time=xr.Variable('time', time),
-                depth=xr.Variable((), depth)
-            ),
-        )
+    @staticmethod
+    def from_dataset(dset):
+        time = dset.time.values
+        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
+        dset['u'] = xr.Variable('time', u)
+        dset['w'] = xr.Variable('time', w)
         return Pipe(dset)
 
+    @staticmethod
+    def from_mapping(time, flow, dens, decline, diam, depth):
+        index = pd.Index(data=time, name='time')
+        data = dict(flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
+        df = pd.DataFrame(data, index=index)
+        return Pipe.from_dataframe(df)
+
     def select(self, time):
-        return interp_time(self.dset, time)
+        clipped_time = np.clip(time, self._time_min, self._time_max)
+        return self._dset.interp(time=clipped_time)
 
 
 class Ambient:
