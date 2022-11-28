@@ -44,23 +44,7 @@ def load_config(fname_or_dict):
 
     # noinspection PyDictCreation
     conf = {}
-
-    # --- Pipe ---
-
-    c = input_conf['pipe']
-
-    # Interpret input as a file name if there is only one input string
-    if isinstance(c, str):
-        c = dict(
-            file=c,
-            format=Path(c).suffix[1:]
-        )
-
-    # Add standard format specifier if not existing
-    if 'format' not in c:
-        c['format'] = 'dict'
-
-    conf['pipe'] = c
+    conf['pipe'] = input_conf['pipe']
 
     # --- Ambient ---
 
