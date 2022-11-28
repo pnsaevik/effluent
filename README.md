@@ -25,9 +25,9 @@ The package is installed using pip:
 
 The software is invoked from the command line as
 
-    python -m effluent config.yaml
+    python -m effluent config.toml
 
-where `config.yaml` is the configuration file specifying the simulation
+where `config.toml` is the configuration file specifying the simulation
 setup.
 
 
