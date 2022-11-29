@@ -22,6 +22,10 @@ class Model:
         return pipe, ambient
 
     def run(self):
+        for _ in self.irun():
+            pass
+
+    def irun(self):
         frequency = self.conf['timestepper']['frequency']
         stop = self.conf['timestepper']['stop']
         times = np.arange(0, stop + frequency / 2, frequency)
@@ -31,3 +35,4 @@ class Model:
                 self.solver.data = self.data(time)
                 result = self.solver.solve()
                 output.write(time, result)
+                yield result
