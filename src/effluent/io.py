@@ -3,45 +3,7 @@ import abc
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-import tomli as toml
 import xarray as xr
-
-
-def load_config(fname_or_dict):
-    """Load and parse input config, and convert to internal config format"""
-
-    if isinstance(fname_or_dict, dict):
-        input_conf = fname_or_dict
-    else:
-        with open(fname_or_dict, 'rb') as fp:
-            input_conf = toml.load(fp)
-
-    # noinspection PyDictCreation
-    conf = {}
-    conf['pipe'] = input_conf['pipe']
-    conf['ambient'] = input_conf['ambient']
-    conf['output'] = input_conf['output']
-
-    # --- Solver ---
-
-    conf['solver'] = {}
-    # Copy a selection of output parameters
-    for k in ['stagnation', 'resolution']:
-        conf['solver'][k] = input_conf['output'][k]
-    # Copy model parameters
-    for k, v in input_conf.get('model', {}).items():
-        conf['solver'][k] = v
-    # Copy solver parameters
-    for k, v in input_conf.get('solver', {}).items():
-        conf['solver'][k] = v
-
-    # --- Time stepper ---
-
-    conf['timestepper'] = {}
-    conf['timestepper']['frequency'] = input_conf['output']['frequency']
-    conf['timestepper']['stop'] = input_conf['output']['stop']
-
-    return conf
 
 
 class Pipe:

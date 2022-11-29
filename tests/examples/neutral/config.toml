@@ -7,7 +7,7 @@ ambient.csv.file = "ambient.csv"
 # Output options
 [output]
 csv.file = "out.csv"
-resolution = 1    # Output resolution [s]
-stagnation = 4    # Time of stagnation [s]
-frequency = 3600  # Output frequency [s]
-stop = 3600       # Stop output after a certain time [s]
+trajectory.step = 1   # Output resolution [s]
+trajectory.stop = 4   # Time of stagnation [s]
+release.step = 3600   # Output frequency [s]
+release.stop = 3600   # Stop output after a certain time [s]

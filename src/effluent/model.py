@@ -1,20 +1,40 @@
 import numpy as np
 import logging
-
-from effluent.solver import Solver
+import tomli as toml
 
 logger = logging.getLogger(__name__)
 
 
 class Model:
-    def __init__(self, fname_or_dict):
-        from effluent.io import load_config, Pipe, Ambient, Output
+    def __init__(self):
+        self.pipe = None
+        self.ambient = None
+        self.output = None
+        self.solver = None
 
-        self.conf = load_config(fname_or_dict)
-        self.pipe = Pipe.from_config(self.conf['pipe'])
-        self.ambient = Ambient.from_config(self.conf['ambient'])
-        self.output = Output.from_config(self.conf['output'])
-        self.solver = Solver.from_config(self.conf['solver'])
+        self.start = 0
+        self.stop = 0
+        self.step = 86400
+
+    @staticmethod
+    def from_config(fname_or_dict):
+        from effluent.io import Pipe, Ambient, Output
+        from effluent.solver import Solver
+
+        conf = load_config(fname_or_dict)
+
+        m = Model()
+        m.pipe = Pipe.from_config(conf['pipe'])
+        m.ambient = Ambient.from_config(conf['ambient'])
+        m.output = Output.from_config(conf['output'])
+        m.solver = Solver.from_config(conf['solver'])
+
+        for key in ['start', 'stop', 'step']:
+            if key in conf['timestepper']:
+                value = conf['timestepper'][key]
+                setattr(m, key, value)
+
+        return m
 
     def data(self, time):
         pipe = self.pipe.select(time)
@@ -26,9 +46,7 @@ class Model:
             pass
 
     def irun(self):
-        frequency = self.conf['timestepper']['frequency']
-        stop = self.conf['timestepper']['stop']
-        times = np.arange(0, stop + frequency / 2, frequency)
+        times = np.arange(self.start, self.stop + self.step / 2, self.step)
 
         with self.output as output:
             for time in times:
@@ -36,3 +54,23 @@ class Model:
                 result = self.solver.solve()
                 output.write(time, result)
                 yield result
+
+
+def load_config(fname_or_dict):
+    """Load and parse input config, and convert to internal config format"""
+
+    if isinstance(fname_or_dict, dict):
+        c = fname_or_dict
+    else:
+        with open(fname_or_dict, 'rb') as fp:
+            c = toml.load(fp)
+
+    release = c['output'].pop('release')
+    solver = c.pop('solver', {})
+    trajectory = c['output'].pop('trajectory')
+    model = c.pop('model', {})
+
+    c['timestepper'] = release
+    c['solver'] = {**solver, **trajectory, **model}
+
+    return c
