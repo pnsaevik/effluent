@@ -6,36 +6,13 @@ from scipy.integrate import solve_ivp
 class Solver:
     def __init__(self, steps):
         self.steps = steps
+        self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
+        self.method = 'RK45'
+        self.data = None
 
     @staticmethod
     def from_config(conf):
         return Solver(**conf)
-
-    def solve(self, pipe, ambient):
-        ivp = InitialValueProblem(self.steps, pipe, ambient)
-        return ivp.solve()
-
-
-class InitialValueProblem:
-    def __init__(self, steps, pipe, ambient):
-        self.steps = steps
-        self.pipe = pipe
-        self.ambient = ambient
-        self._zmin = self.ambient.depth[0].values
-        self._zmax = self.ambient.depth[1].values
-        self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
-        self.method = 'RK45'
-
-    def initial_conditions(self):
-        x0 = 0
-        y0 = 0
-        z0 = self.pipe.depth.values.item()
-        u0 = self.pipe.u.values.item()
-        v0 = 0
-        w0 = self.pipe.w.values.item()
-        d0 = self.pipe.dens.values.item()
-        r0 = 0.5 * self.pipe.diam.values.item()
-        return np.array([x0, y0, z0, u0, v0, w0, d0, r0], 'f8')
 
     def solve(self):
         result = solve_ivp(
@@ -53,6 +30,28 @@ class InitialValueProblem:
         # Organize result
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
+
+    def ambient_data(self, depth):
+        ambient = self.data[1]
+        zmin = ambient.depth[0].values
+        zmax = ambient.depth[-1].values
+        clipped_depth = np.clip(depth, zmin, zmax)
+        return ambient.interp(depth=clipped_depth)
+
+    def pipe_data(self):
+        return self.data[0]
+
+    def initial_conditions(self):
+        pipe = self.pipe_data()
+        x0 = 0
+        y0 = 0
+        z0 = pipe.depth.values.item()
+        u0 = pipe.u.values.item()
+        v0 = 0
+        w0 = pipe.w.values.item()
+        d0 = pipe.dens.values.item()
+        r0 = 0.5 * pipe.diam.values.item()
+        return np.array([x0, y0, z0, u0, v0, w0, d0, r0], 'f8')
 
     def odefunc(self, t, y):
         """
@@ -77,8 +76,7 @@ class InitialValueProblem:
         K_n = 0.5       # Added mass coefficient, normal gravity pull (= 1 / [1 + k_n])
 
         # Extract ambient velocity and density
-        clipped_depth = np.clip(z, self._zmin, self._zmax)
-        ambient = self.ambient.interp(depth=clipped_depth)
+        ambient = self.ambient_data(z)
         u_a = ambient.u.values
         v_a = ambient.v.values
         rho_a = ambient.dens.values

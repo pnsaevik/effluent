@@ -16,6 +16,11 @@ class Model:
         self.output = Output.from_config(self.conf['output'])
         self.solver = Solver.from_config(self.conf['solver'])
 
+    def data(self, time):
+        pipe = self.pipe.select(time)
+        ambient = self.ambient.select(time)
+        return pipe, ambient
+
     def run(self):
         frequency = self.conf['timestepper']['frequency']
         stop = self.conf['timestepper']['stop']
@@ -23,7 +28,6 @@ class Model:
 
         with self.output as output:
             for time in times:
-                pipe = self.pipe.select(time)
-                ambient = self.ambient.select(time)
-                result = self.solver.solve(pipe, ambient)
+                self.solver.data = self.data(time)
+                result = self.solver.solve()
                 output.write(time, result)

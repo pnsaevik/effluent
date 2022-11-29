@@ -1,11 +1,11 @@
 import xarray as xr
 import numpy as np
-
-import effluent.solver
 import pytest
 
+from effluent import solver
 
-class Test_IVP_solve:
+
+class Test_Solver_solve:
     @pytest.fixture(scope='class')
     def pipe_dset_horz(self):
         return xr.Dataset(dict(depth=100, u=1, w=0, dens=1000, diam=0.5))
@@ -65,38 +65,44 @@ class Test_IVP_solve:
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_still)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_horz, ambient_dset_still)
+        return s.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_decl, ambient_dset_still)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_decl, ambient_dset_still)
+        return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
         steps = np.array([0, 10, 20])
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_cross)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_horz, ambient_dset_cross)
+        return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
         steps = np.array([0, 10, 20])
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_horz, ambient_dset_coflow)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_horz, ambient_dset_coflow)
+        return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
         steps = np.array([0, 10, 20])
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_light, ambient_dset_still)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_light, ambient_dset_still)
+        return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
         steps = np.linspace(0, 200, 11)
-        ivp = effluent.solver.InitialValueProblem(steps, pipe_dset_light, ambient_dset_stratified)
-        return ivp.solve()
+        s = solver.Solver(steps)
+        s.data = (pipe_dset_light, ambient_dset_stratified)
+        return s.solve()
 
     @staticmethod
     def sign_of_change(dset, v):
