@@ -24,11 +24,16 @@ def load_config(fname_or_dict):
 
     # --- Solver ---
 
-    stagnation = input_conf['output']['stagnation']
-    resolution = input_conf['output']['resolution']
-
     conf['solver'] = {}
-    conf['solver']['steps'] = np.arange(0, stagnation, resolution)
+    # Copy a selection of output parameters
+    for k in ['stagnation', 'resolution']:
+        conf['solver'][k] = input_conf['output'][k]
+    # Copy model parameters
+    for k, v in input_conf.get('model', {}).items():
+        conf['solver'][k] = v
+    # Copy solver parameters
+    for k, v in input_conf.get('solver', {}).items():
+        conf['solver'][k] = v
 
     # --- Time stepper ---
 

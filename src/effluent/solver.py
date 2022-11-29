@@ -4,24 +4,55 @@ from scipy.integrate import solve_ivp
 
 
 class Solver:
-    def __init__(self, steps):
-        self.steps = steps
+    def __init__(self):
         self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
-        self.method = 'RK45'
+
+        # Model parameters
+        self.beta_n = 0.4
+        self.beta_t = 0.16
+        self.mass_n = 1.0
+        self.mass_t = 0.18
+
+        # Solver parameters
+        self.method = "RK45"
+        self.rtol = 1e-3
+        self.atol = 1e-6
+        self.first_step = 0
+        self.max_step = 0
+
+        # Output parameters
+        self.resolution = None
+        self.stagnation = None
+
         self.data = None
 
     @staticmethod
     def from_config(conf):
-        return Solver(**conf)
+        s = Solver()
+        option_names = [
+            'beta_n', 'beta_t', 'mass_n', 'mass_t', 'method', 'rtol', 'atol',
+            'first_step', 'max_step', 'resolution', 'stagnation',
+        ]
+        for k, v in conf.items():
+            if k in option_names:
+                setattr(s, k, v)
+
+        return s
 
     def solve(self):
+        steps = np.arange(0, self.stagnation + 0.5 * self.resolution, self.resolution)
+
         result = solve_ivp(
             fun=self.odefunc,
-            t_span=self.steps[[0, -1]],
+            t_span=steps[[0, -1]],
             y0=self.initial_conditions(),
-            method=self.method,
-            t_eval=self.steps,
+            t_eval=steps,
             vectorized=True,
+            method=self.method,
+            rtol=self.rtol,
+            atol=self.atol,
+            first_step=self.first_step or None,
+            max_step=self.max_step or np.inf,
         )
 
         # noinspection PyUnresolvedReferences
@@ -70,10 +101,10 @@ class Solver:
         x, y, z, u, v, w, rho, R = y_in
 
         # Define coefficients
-        beta_t = 0.16   # Entrainment coefficient, co-flow
-        beta_n = 0.4    # Entrainment coefficient, cross-flow
-        K_t = 0.85      # Added mass coefficient, tangential gravity pull (= 1 / [1 + k_t])
-        K_n = 0.5       # Added mass coefficient, normal gravity pull (= 1 / [1 + k_n])
+        beta_t = self.beta_t          # Entrainment coefficient, co-flow
+        beta_n = self.beta_n          # Entrainment coefficient, cross-flow
+        K_t = 1 / (1 + self.mass_t)   # Added mass coefficient, tangential gravity pull
+        K_n = 1 / (1 + self.mass_n)   # Added mass coefficient, normal gravity pull
 
         # Extract ambient velocity and density
         ambient = self.ambient_data(z)

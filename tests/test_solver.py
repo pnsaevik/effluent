@@ -64,43 +64,37 @@ class Test_Solver_solve:
 
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
-        steps = np.array([0, 10, 20])
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
         s.data = (pipe_dset_horz, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
-        steps = np.array([0, 10, 20])
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
         s.data = (pipe_dset_decl, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
-        steps = np.array([0, 10, 20])
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
         s.data = (pipe_dset_horz, ambient_dset_cross)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
-        steps = np.array([0, 10, 20])
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
         s.data = (pipe_dset_horz, ambient_dset_coflow)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
-        steps = np.array([0, 10, 20])
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
         s.data = (pipe_dset_light, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
-        steps = np.linspace(0, 200, 11)
-        s = solver.Solver(steps)
+        s = solver.Solver.from_config(dict(resolution=20, stagnation=200))
         s.data = (pipe_dset_light, ambient_dset_stratified)
         return s.solve()
 
