@@ -59,18 +59,30 @@ class Model:
 def load_config(fname_or_dict):
     """Load and parse input config, and convert to internal config format"""
 
-    if isinstance(fname_or_dict, dict):
-        c = fname_or_dict
-    else:
-        with open(fname_or_dict, 'rb') as fp:
-            c = toml.load(fp)
+    c = load_file_or_dict(fname_or_dict)
 
     release = c['output'].pop('release')
     solver = c.pop('solver', {})
     trajectory = c['output'].pop('trajectory')
     model = c.pop('model', {})
 
+    # Convert dates to posix times
+    np_epoch = np.datetime64('1970-01-01')
+    for key in ['start', 'stop']:
+        if key in release:
+            dt64 = np.datetime64(release[key])
+            posix = (dt64 - np_epoch) / np.timedelta64(1, 's')
+            release[key] = posix
+
     c['timestepper'] = release
     c['solver'] = {**solver, **trajectory, **model}
 
     return c
+
+
+def load_file_or_dict(f):
+    if isinstance(f, dict):
+        return f
+    else:
+        with open(f, 'rb') as fp:
+            return toml.load(fp)
