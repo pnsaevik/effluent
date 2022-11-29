@@ -1,3 +1,5 @@
+import abc
+
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
@@ -180,17 +182,27 @@ class Output:
         else:
             raise ValueError("No output file name given")
 
+    @abc.abstractmethod
+    def write(self, time, result):
+        return NotImplementedError
+
 
 class OutputCSV(Output):
-    def __init__(self, file):
+    def __init__(self, file, variables):
+        self.variables = variables
+        self._blank_file = True
+
         if isinstance(file, str):
             self.file = file
             self.dset = None
-        else:
+
+        elif hasattr(file, 'write') and callable(file.write):
+            # Diskless mode
             self.file = None
             self.dset = file
 
-        self._blank_file = True
+        else:
+            raise TypeError(f'Expected file name or stream, found "{type(file)}"')
 
     def __enter__(self):
         if self.dset is None:
@@ -208,13 +220,20 @@ class OutputCSV(Output):
 
     @staticmethod
     def from_config(conf):
-        out = OutputCSV(conf['csv']['file'])
+        out = OutputCSV(
+            file=conf['csv']['file'],
+            variables=conf.get('variables', None)
+        )
         return out
 
     def write(self, time, result):
         df = result.to_dataframe()
         df['release_time'] = time
-        df = df.reset_index().set_index(['release_time', 't'])
+        df = df.reset_index().set_index(['release_time', 't']).reset_index()
+
+        # Drop non-output variables
+        if self.variables is not None:
+            df = df[self.variables]
 
         # Append result to file, write headers only if blank file
         df.to_csv(
@@ -222,12 +241,14 @@ class OutputCSV(Output):
             line_terminator='\n',
             header=self._blank_file,
             float_format='%.10g',
+            index=False,
         )
         self._blank_file = False
 
 
 class OutputNC(Output):
-    def __init__(self, file):
+    def __init__(self, file, variables):
+        self.variables = variables
         self.dset = None
         self._blank_file = True
 
@@ -264,14 +285,25 @@ class OutputNC(Output):
 
     @staticmethod
     def from_config(conf):
-        out = OutputNC(conf['nc']['file'])
+        out = OutputNC(
+            file=conf['nc']['file'],
+            variables=conf.get('variables', None)
+        )
         return out
 
     def write(self, time, result):
         result = result.assign_coords(release_time=time)
         result = result.expand_dims('release_time')
+
         if self._blank_file:
             self._append_attributes(result)
+
+        # Drop non-output variables
+        if self.variables is not None:
+            non_output_vars = [v for v in result.variables if v not in self.variables]
+            result = result.drop_vars(non_output_vars)
+
+        if self._blank_file:
             write_xr_to_nc(result, self.dset)
             self._blank_file = False
         else:

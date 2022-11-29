@@ -248,3 +248,32 @@ class Test_Output_from_config:
         assert buf.z.values.tolist() == [[5, 6], [5, 6]]
         assert set(buf.data_vars) == {'x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius'}
         assert set(buf.coords) == {'release_time', 't'}
+
+    def test_option_variables_when_nc_file(self, result):
+        buf = xr.Dataset()
+        conf = dict(
+            variables=['release_time', 'x', 'y', 'z'],
+            nc=dict(file=buf),
+        )
+
+        with effluent.io.Output.from_config(conf) as out:
+            out.write(time=0, result=result)
+
+        assert set(buf.data_vars) == {'x', 'y', 'z'}
+        assert set(buf.coords) == {'release_time'}
+        assert set(buf.dims) == {'release_time', 't'}
+
+    def test_option_variables_when_csv_file(self, result):
+        buf = io.StringIO()
+        conf = dict(
+            variables=['release_time', 'x', 'z', 'y'],
+            csv=dict(file=buf),
+        )
+
+        with effluent.io.Output.from_config(conf) as out:
+            out.write(time=0, result=result)
+
+            buf.seek(0)
+            first_line = buf.readline()
+
+        assert first_line == "release_time,x,z,y\n"
