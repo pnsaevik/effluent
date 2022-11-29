@@ -1,6 +1,3 @@
-import io
-from pathlib import Path
-
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
@@ -231,12 +228,23 @@ class OutputCSV(Output):
 
 class OutputNC(Output):
     def __init__(self, file):
-        from uuid import uuid4
-
         self.dset = None
-        self.xr_dset = file if isinstance(file, xr.Dataset) else None
-        self.diskless = not isinstance(file, str)
-        self.fname = file if isinstance(file, str) else uuid4()
+        self._blank_file = True
+
+        if isinstance(file, str):
+            self.fname = file
+            self.diskless = False
+            self.xr_dset = None
+
+        elif isinstance(file, xr.Dataset):
+            # Diskless mode: Data is written to memory, and to an xarray.Dataset on exit
+            from uuid import uuid4
+            self.fname = uuid4()
+            self.diskless = True
+            self.xr_dset = file
+
+        else:
+            raise TypeError(f'Unknown file type: {type(file)}')
 
     def __enter__(self):
         self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
