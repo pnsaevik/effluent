@@ -2,11 +2,22 @@
 Output parameters
 ===============================
 
-The output file contains the trajectory of the effluent jet for
-different release times. The output parameters determine the
-file format and the amount of data written. They affect the simulation process
-as well, since the software only performs computations that are required for
-the output.
+The output file contains a set of trajectories of the effluent jet, one for
+each release time. The first release time is
+:confval:`output.release.start`, the last release time is
+:confval:`output.release.stop`, and the number of intermediate trajectories is
+given by :confval:`output.release.step`.
+
+Each trajectory is a collection of points, one for every output time step.
+The first trajectory time step is :confval:`output.trajectory.start`, the
+last one is :confval:`output.trajectory.stop`, and the number of intermediate
+trajectory points is determined by :confval:`output.trajectory.step`. The
+number of actual internal time steps is determined by
+:doc:`solver parameters </config/solver>`.
+
+Output is either written to a text file (:confval:`output.csv.file`) or a
+netCDF file (:confval:`output.nc.file`). The option :confval:`output.variables`
+can be used to limit the number of variables written.
 
 |
 
@@ -17,7 +28,7 @@ the output.
 
     Variables to include in the output. Possible alternatives are:
 
-    * ``release_time``: Time of release, relative to simulation start [s]
+    * ``release_time``: Time of release [date]
     * ``t``: Time since release from pipe outlet [s]
     * ``x``: Centerline *x* position (co-flow direction) [m]
     * ``y``: Centerline *y* position (crossflow direction) [m]
@@ -30,46 +41,66 @@ the output.
 
 |
 
-.. confval:: output.resolution
+.. confval:: output.release.start
+
+    :type: date
+    :default: 1970-01-01
+
+    Date and time of the first simulated trajectory.
+
+|
+
+.. confval:: output.release.stop
+
+    :type: date
+    :default: 1970-01-01
+
+    Date and time of the last simulated trajectory.
+
+|
+
+.. confval:: output.release.step
 
     :type: number
     :units: s
+    :default: 86400
 
-    Time resolution of the ``t`` variable in the output file. This is not the
+    Time between each simulated trajectory.
+
+|
+
+.. confval:: output.trajectory.start
+
+    :type: number
+    :units: s
+    :default: 0
+
+    The first trajectory point (first value of ``t``) written to the output
+    file.
+
+|
+
+.. confval:: output.trajectory.stop
+
+    :type: number
+    :units: s
+    :default: 60
+
+    The last trajectory point (last value of ``t``) written to the output
+    file.
+
+|
+
+.. confval:: output.trajectory.step
+
+    :type: number
+    :units: s
+    :default: 1
+
+    The time between trajectory points (i.e., time between ``t`` values)
+    written to the output file. This is not the
     same as the internal time step, which is chosen automatically by the
     integration algorithm.
-
-|
-
-.. confval:: output.stagnation
-
-    :type: number
-    :units: s
-
-    The maximum value of ``t`` in the output file.
-    This parameter determines the length of each simulation period.
-
-|
-
-.. confval:: output.frequency
-
-    :type: number
-    :units: s
-
-    Time resolution of the ``release_time`` variable in the output file.
-    This parameter determines the time interval between subsequent
-    plume simulations.
-
-|
-
-.. confval:: output.stop
-
-    :type: number
-    :units: s
-
-    The maximum value of ``release_time`` in the output file.
-    This parameter determines when the subsequent plume simulations should be
-    stopped.
 
 |
 

@@ -21,8 +21,9 @@ class Solver:
         self.max_step = 0
 
         # Output parameters
-        self.resolution = None
-        self.stagnation = None
+        self.start = 0
+        self.stop = 60
+        self.step = 1
 
         self.data = None
 
@@ -31,7 +32,7 @@ class Solver:
         s = Solver()
         option_names = [
             'beta_n', 'beta_t', 'mass_n', 'mass_t', 'method', 'rtol', 'atol',
-            'first_step', 'max_step', 'resolution', 'stagnation',
+            'first_step', 'max_step', 'start', 'stop', 'step',
         ]
         for k, v in conf.items():
             if k in option_names:
@@ -40,7 +41,7 @@ class Solver:
         return s
 
     def solve(self):
-        steps = np.arange(0, self.stagnation + 0.5 * self.resolution, self.resolution)
+        steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
         result = solve_ivp(
             fun=self.odefunc,

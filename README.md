@@ -1,8 +1,5 @@
 # effluent
 
-**NOTE**: This package is under development and not all features are
-implemented yet.
-
 Effluent is a python package for simulating the dispersion of effluent
 discharges from wastewater pipes. The underlying model is based on
 Lee, Joseph H. W., and Chu, Vincent H.: *Turbulent Jets and Plumes*.

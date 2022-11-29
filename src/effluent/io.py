@@ -3,52 +3,14 @@ import abc
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-import tomli as toml
 import xarray as xr
-
-
-def load_config(fname_or_dict):
-    """Load and parse input config, and convert to internal config format"""
-
-    if isinstance(fname_or_dict, dict):
-        input_conf = fname_or_dict
-    else:
-        with open(fname_or_dict, 'rb') as fp:
-            input_conf = toml.load(fp)
-
-    # noinspection PyDictCreation
-    conf = {}
-    conf['pipe'] = input_conf['pipe']
-    conf['ambient'] = input_conf['ambient']
-    conf['output'] = input_conf['output']
-
-    # --- Solver ---
-
-    conf['solver'] = {}
-    # Copy a selection of output parameters
-    for k in ['stagnation', 'resolution']:
-        conf['solver'][k] = input_conf['output'][k]
-    # Copy model parameters
-    for k, v in input_conf.get('model', {}).items():
-        conf['solver'][k] = v
-    # Copy solver parameters
-    for k, v in input_conf.get('solver', {}).items():
-        conf['solver'][k] = v
-
-    # --- Time stepper ---
-
-    conf['timestepper'] = {}
-    conf['timestepper']['frequency'] = input_conf['output']['frequency']
-    conf['timestepper']['stop'] = input_conf['output']['stop']
-
-    return conf
 
 
 class Pipe:
     def __init__(self, dset):
         self._dset = dset
-        self._time_min = dset.time[0].values.item()
-        self._time_max = dset.time[-1].values.item()
+        self._time_min = dset.time[0].values
+        self._time_max = dset.time[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -69,12 +31,12 @@ class Pipe:
         df = pd.read_csv(
             file,
             sep=',',
-            index_col='time',
             header=0,
             skipinitialspace=True,
             skip_blank_lines=True,
             comment='#',
         )
+
         return Pipe.from_dataframe(df)
 
     @staticmethod
@@ -86,13 +48,13 @@ class Pipe:
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
     @staticmethod
     def from_dataset(dset):
-        time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
@@ -100,9 +62,8 @@ class Pipe:
 
     @staticmethod
     def from_mapping(time, flow, dens, decline, diam, depth):
-        index = pd.Index(data=time, name='time')
-        data = dict(flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
-        df = pd.DataFrame(data, index=index)
+        data = dict(time=time, flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
+        df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
     def select(self, time):
@@ -113,8 +74,8 @@ class Pipe:
 class Ambient:
     def __init__(self, dset):
         self._dset = dset
-        self._tmin = dset.time[0].values.item()
-        self._tmax = dset.time[-1].values.item()
+        self._tmin = dset.time[0].values
+        self._tmax = dset.time[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -132,6 +93,9 @@ class Ambient:
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index(['time', 'depth'])
+
         dset = xr.Dataset.from_dataframe(df)
         return Ambient.from_dataset(dset)
 
@@ -139,7 +103,7 @@ class Ambient:
     def from_dataset(dset):
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
         return Ambient(dset)
 
     @staticmethod
@@ -147,12 +111,12 @@ class Ambient:
         df = pd.read_csv(
             file,
             sep=',',
-            index_col=('time', 'depth'),
             header=0,
             skipinitialspace=True,
             skip_blank_lines=True,
             comment='#',
         )
+
         return Ambient.from_dataframe(df)
 
     @staticmethod

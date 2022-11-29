@@ -7,7 +7,8 @@ ambient.csv.file = "ambient.csv"
 # Output options
 [output]
 csv.file = "out.csv"
-resolution = 1    # Output resolution [s]
-stagnation = 4    # Time of stagnation [s]
-frequency = 3600  # Output frequency [s]
-stop = 3600       # Stop output after a certain time [s]
+trajectory.step = 1   # Time between trajectory points [s]
+trajectory.stop = 4   # Time of final trajectory point [s]
+release.start = 1970-01-01           # Time of first release [date]
+release.stop = 1970-01-01T01:00:00   # Time of final release [date]
+release.step = 3600                  # Time between releases [s]

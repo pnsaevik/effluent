@@ -11,7 +11,7 @@ def run(conf):
     init_logger()
 
     from .model import Model
-    model = Model(conf)
+    model = Model.from_config(conf)
     model.run()
 
     return model.output.file
