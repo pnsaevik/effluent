@@ -8,8 +8,8 @@ class Solver:
         self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
 
         # Model parameters
-        self.beta_n = 0.4
-        self.beta_t = 0.16
+        self.beta_n = 0.34
+        self.beta_t = 0.17
         self.mass_n = 1.0
         self.mass_t = 0.18
 
