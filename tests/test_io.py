@@ -113,9 +113,9 @@ class Test_Pipe_from_config:
 
     def test_csv_file(self):
         buf = io.StringIO("""
-            time, flow, dens, diam, depth, decline
-               0,    1,    3,    5,     7,       9
-            1200,    2,    4,    6,     8,      10
+                        time, flow, dens, diam, depth, decline
+            1970-01-01 00:00,    1,    3,    5,     7,       9
+            1970-01-01 00:20,    2,    4,    6,     8,      10
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Pipe.from_config(conf)
@@ -166,13 +166,13 @@ class Test_Ambient_from_config:
 
     def test_csv_file(self):
         buf = io.StringIO("""
-            time, depth, coflow, crossflow, dens
-               0,     0,      0,         6,    2
-               0,    10,      1,         7,    3
-               0,    20,      2,         8,    4
-            1200,     0,      3,         9,    5
-            1200,    10,      4,         0,    6
-            1200,    20,      5,         1,    7
+                        time, depth, coflow, crossflow, dens
+            1970-01-01 00:00,     0,      0,         6,    2
+            1970-01-01 00:00,    10,      1,         7,    3
+            1970-01-01 00:00,    20,      2,         8,    4
+            1970-01-01 00:20,     0,      3,         9,    5
+            1970-01-01 00:20,    10,      4,         0,    6
+            1970-01-01 00:20,    20,      5,         1,    7
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Ambient.from_config(conf)

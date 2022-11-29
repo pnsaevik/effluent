@@ -31,12 +31,19 @@ class Pipe:
         df = pd.read_csv(
             file,
             sep=',',
-            index_col='time',
             header=0,
             skipinitialspace=True,
             skip_blank_lines=True,
             comment='#',
         )
+
+        time = df['time'].values.astype('datetime64')
+        epoch = np.datetime64('1970-01-01')
+        onesec = np.timedelta64(1, 's')
+        posix = (time - epoch) / onesec
+        df['time'] = posix
+        df = df.set_index('time')
+
         return Pipe.from_dataframe(df)
 
     @staticmethod
@@ -101,7 +108,7 @@ class Ambient:
     def from_dataset(dset):
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
+        assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
         return Ambient(dset)
 
     @staticmethod
@@ -109,12 +116,19 @@ class Ambient:
         df = pd.read_csv(
             file,
             sep=',',
-            index_col=('time', 'depth'),
             header=0,
             skipinitialspace=True,
             skip_blank_lines=True,
             comment='#',
         )
+
+        time = df['time'].values.astype('datetime64')
+        epoch = np.datetime64('1970-01-01')
+        onesec = np.timedelta64(1, 's')
+        posix = (time - epoch) / onesec
+        df['time'] = posix
+        df = df.set_index(['time', 'depth'])
+
         return Ambient.from_dataframe(df)
 
     @staticmethod

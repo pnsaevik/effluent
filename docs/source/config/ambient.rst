@@ -17,9 +17,9 @@ or :confval:`ambient.nc.file`).
 .. confval:: ambient.time
 
     :type: array
-    :units: s
+    :units: date
 
-    Time since simulation start.
+    Time and date associated with the pipe data.
 
 |
 

@@ -7,6 +7,6 @@
 #  depth: Depth of pipe outlet [m]
 #  decline: Direction of pipe outlet (positive is downwards) [degrees]
 #
-time, flow, dens, diam, depth, decline
-   0,    1, 1000,  0.5,    50,       0
-1200,    1, 1000,  0.5,    50,       0
+            time, flow, dens, diam, depth, decline
+1970-01-01 00:00,    1, 1000,  0.5,    50,       0
+1970-01-01 00:20,    1, 1000,  0.5,    50,       0
