@@ -94,21 +94,25 @@ class Test_append_xr_to_nc:
 
 class Test_Pipe_from_config:
     def test_explicit_mapping_with_arrays(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200], flow=[2, 3], dens=[4, 5], diam=[6, 7], depth=[8, 9],
-            decline=[10, 11],
+            time=time.astype(object), flow=[2, 3], dens=[4, 5], diam=[6, 7],
+            depth=[8, 9], decline=[10, 11],
         )
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4.5
 
     def test_explicit_mapping_with_singlenums(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200], flow=[2, 3], dens=4, diam=6, depth=[8, 9],
+            time=time.astype(object), flow=[2, 3], dens=4, diam=6, depth=[8, 9],
             decline=10,
         )
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4
 
     def test_csv_file(self):
@@ -119,12 +123,14 @@ class Test_Pipe_from_config:
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 3.5
 
     def test_nc_file(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = xr.Dataset(
-            coords=dict(time=[0, 1200]),
+            coords=dict(time=time),
             data_vars=dict(
                 flow=xr.Variable('time', [1, 2]),
                 dens=xr.Variable('time', [3, 4]),
@@ -135,33 +141,37 @@ class Test_Pipe_from_config:
         ).to_netcdf()
         conf = dict(nc=dict(file=buf))
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 3.5
 
 
 class Test_Ambient_from_config:
     def test_explicit_mapping_with_arrays(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200],
+            time=time.astype(object),
             depth=[0, 10, 20],
             coflow=[[0, 1, 2], [3, 4, 5]],
             crossflow=[[6, 7, 8], [9, 0, 1]],
             dens=[[2, 3, 4], [5, 6, 7]],
         )
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
     def test_explicit_mapping_with_singlenums(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200],
+            time=time.astype(object),
             depth=[0, 10, 20],
             coflow=[[0, 1, 2], [3, 4, 5]],
             crossflow=[[6, 7, 8], [9, 0, 1]],
             dens=3,
         )
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3, 3, 3]
 
     def test_csv_file(self):
@@ -176,12 +186,17 @@ class Test_Ambient_from_config:
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
     def test_nc_file(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = xr.Dataset(
-            coords=dict(time=[0, 1200], depth=[0, 10, 20]),
+            coords=dict(
+                time=time,
+                depth=[0, 10, 20],
+            ),
             data_vars=dict(
                 coflow=xr.Variable(('time', 'depth'), [[0, 1, 2], [3, 4, 5]]),
                 crossflow=xr.Variable(('time', 'depth'), [[6, 7, 8], [9, 0, 1]]),
@@ -190,7 +205,7 @@ class Test_Ambient_from_config:
         ).to_netcdf()
         conf = dict(nc=dict(file=buf))
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
 

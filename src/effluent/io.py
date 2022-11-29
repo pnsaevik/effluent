@@ -9,8 +9,8 @@ import xarray as xr
 class Pipe:
     def __init__(self, dset):
         self._dset = dset
-        self._time_min = dset.time[0].values.item()
-        self._time_max = dset.time[-1].values.item()
+        self._time_min = dset.time[0].values
+        self._time_max = dset.time[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -37,13 +37,6 @@ class Pipe:
             comment='#',
         )
 
-        time = df['time'].values.astype('datetime64')
-        epoch = np.datetime64('1970-01-01')
-        onesec = np.timedelta64(1, 's')
-        posix = (time - epoch) / onesec
-        df['time'] = posix
-        df = df.set_index('time')
-
         return Pipe.from_dataframe(df)
 
     @staticmethod
@@ -55,13 +48,13 @@ class Pipe:
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
     @staticmethod
     def from_dataset(dset):
-        time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
@@ -69,9 +62,8 @@ class Pipe:
 
     @staticmethod
     def from_mapping(time, flow, dens, decline, diam, depth):
-        index = pd.Index(data=time, name='time')
-        data = dict(flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
-        df = pd.DataFrame(data, index=index)
+        data = dict(time=time, flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
+        df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
     def select(self, time):
@@ -82,8 +74,8 @@ class Pipe:
 class Ambient:
     def __init__(self, dset):
         self._dset = dset
-        self._tmin = dset.time[0].values.item()
-        self._tmax = dset.time[-1].values.item()
+        self._tmin = dset.time[0].values
+        self._tmax = dset.time[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -101,6 +93,9 @@ class Ambient:
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index(['time', 'depth'])
+
         dset = xr.Dataset.from_dataframe(df)
         return Ambient.from_dataset(dset)
 
@@ -121,13 +116,6 @@ class Ambient:
             skip_blank_lines=True,
             comment='#',
         )
-
-        time = df['time'].values.astype('datetime64')
-        epoch = np.datetime64('1970-01-01')
-        onesec = np.timedelta64(1, 's')
-        posix = (time - epoch) / onesec
-        df['time'] = posix
-        df = df.set_index(['time', 'depth'])
 
         return Ambient.from_dataframe(df)
 

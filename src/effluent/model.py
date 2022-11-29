@@ -47,6 +47,7 @@ class Model:
 
     def irun(self):
         times = np.arange(self.start, self.stop + self.step / 2, self.step)
+        times = np.datetime64('1970-01-01', 'us') + times * np.timedelta64(1000000, 'us')
 
         with self.output as output:
             for time in times:
