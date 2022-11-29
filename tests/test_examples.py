@@ -4,13 +4,14 @@ from pathlib import Path
 import os
 
 
-named_examples = ['minimal', 'neutral']
+EXAMPLE_DIR = Path(__file__).parent / "examples"
+NAMED_EXAMPLES = [f.name for f in EXAMPLE_DIR.glob('*') if f.is_dir()]
 
 
 class Example:
     def __init__(self, name):
         self.name = name
-        self.path = Path(__file__).parent / "examples" / name
+        self.path = EXAMPLE_DIR / name
 
     def run(self):
         os.chdir(self.path)
@@ -48,7 +49,7 @@ def compare_netcdf(a, b):
 
 
 class Test_run:
-    @pytest.mark.parametrize("name", named_examples)
+    @pytest.mark.parametrize("name", NAMED_EXAMPLES)
     def test_matches_output(self, name):
         ex = Example(name)
         result, expected = ex.run()
