@@ -1,4 +1,4 @@
 import sys
 from . import run
 
-run(sys.argv[1:])
+run(*sys.argv[1:])

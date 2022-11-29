@@ -1,10 +1,17 @@
-def run(*argv):
-    conf_fname = argv[0]
+def run(conf):
+    """
+    Run the main script and save the output in the specified file
+
+    :param conf: Simulation configuration parameters (dict object or name of .toml file)
+    See online documentation for a description of available options.
+
+    :return: Name of output file
+    """
 
     init_logger()
 
     from .model import Model
-    model = Model(conf_fname)
+    model = Model(conf)
     model.run()
 
     return model.output.file
