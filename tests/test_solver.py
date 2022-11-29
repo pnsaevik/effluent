@@ -179,3 +179,14 @@ class Test_Solver_solve:
         assert np.isnan(self.sign_of_change(r, 'w'))   # Vertical bouncing behaviour
         assert np.isnan(self.sign_of_change(r, 'density'))  # Bouncing behaviour
         assert self.sign_of_change(r, 'radius') == 1   # Radius increase
+
+
+class Test_Solver_from_config:
+    def test_sets_internal_parameters(self):
+        conf = dict(
+            beta_n=1, beta_t=2, mass_n=3, mass_t=4, method=5, rtol=6, atol=7,
+            first_step=8, max_step=9, resolution=10, stagnation=11,
+        )
+        s = solver.Solver.from_config(conf)
+        for k, v in conf.items():
+            assert getattr(s, k) == v
