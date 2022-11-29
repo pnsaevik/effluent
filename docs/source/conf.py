@@ -1,4 +1,23 @@
 from datetime import datetime
+from sphinx.application import Sphinx
+from sphinx.util.docfields import Field
+import os
+import sys
+
+
+def setup(app: Sphinx):
+    app.add_object_type(
+        'confval',
+        'confval',
+        objname='configuration value',
+        indextemplate='pair: %s; configuration value',
+        doc_field_types=[
+            Field('type', label='Type', has_arg=False, names=('type',)),
+            Field('default', label='Default', has_arg=False, names=('default',)),
+            Field('units', label='Units', has_arg=False, names=('units',)),
+        ]
+    )
+
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -12,9 +31,7 @@ from datetime import datetime
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -25,8 +42,14 @@ copyright = f'{datetime.now().year}, Pål Næverlid Sævik'
 author = 'Pål Næverlid Sævik'
 source_suffix = '.rst'
 
+
 # The full version, including alpha/beta/rc tags
-release = "1.0"
+def getversion():
+    import effluent
+    return effluent.__version__
+
+
+release = getversion()
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +58,20 @@ release = "1.0"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.mathjax',
+    'sphinx.ext.doctest',
 ]
+
+nitpicky = True
+html_css_files = [
+    'css/custom.css',
+]
+
+# Matplotlib extension options
+plot_include_source = True
+plot_html_show_source_link = False
+plot_formats = ['png']
+plot_html_show_formats = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

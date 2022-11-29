@@ -1,0 +1,15 @@
+# Properties of ambient water masses
+#
+# time: Time since simulation start [s]
+# depth: Depth level [m]
+# coflow: Velocity in co-flow (parallel) direction [m/s]
+# crossflow: Velocity in cross-flow (to the right) direction [m/s]
+# dens: Fluid density [kg/m^3]
+#
+time, depth, coflow, crossflow, dens
+   0,     0,    0.1,       0.2, 1000
+   0,    10,    0.1,       0.2, 1000
+   0,    50,    0.1,       0.2, 1000
+3600,     0,    0.1,       0.2, 1000
+3600,    10,    0.1,       0.2, 1000
+3600,    50,    0.1,       0.2, 1000
