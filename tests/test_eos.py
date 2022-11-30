@@ -3,11 +3,11 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("eos_name", ["simple", "roms"])
+@pytest.mark.parametrize("eos_name", ["roms"])
 class Test_rho:
     @pytest.fixture()
     def rho(self, eos_name):
-        return dict(simple=eos.nemo_rho, roms=eos.roms_rho)[eos_name]
+        return dict(roms=eos.roms_rho)[eos_name]
 
     def test_density_is_between_950_and_1100(self, rho):
         temp = np.array([0, 10, 20, 30, 40])
