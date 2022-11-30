@@ -9,8 +9,8 @@ and depth.
 It is required to supply either a complete set of explicit parameters
 (:confval:`ambient.time`, :confval:`ambient.depth`, :confval:`ambient.coflow`,
 :confval:`ambient.crossflow` and :confval:`ambient.dens`) or the name of an
-external file containing the parameters (:confval:`ambient.csv.file`
-or :confval:`ambient.nc.file`).
+external file containing the parameters (:confval:`ambient.csv.file`,
+:confval:`ambient.nc.file` or :confval:`ambient.roms.file`).
 
 |
 
@@ -88,3 +88,48 @@ or :confval:`ambient.nc.file`).
     The file must have one variable for each pipe parameter. Each of the
     two-dimensional variables should have time as its first dimension and depth
     as its second dimension.
+
+|
+
+.. confval:: ambient.roms.file
+
+    :type: string
+
+    Read ambient parameters from the ocean model
+    `ROMS <https://www.myroms.org/>`_. If wildcards are given, the matching
+    files are assumed to be ordered sequentially in time. The software reads
+    the fields ``salt`` and ``temp``, and computes seawater density from them.
+
+    Reading ROMS files requires
+    `dask <https://docs.xarray.dev/en/stable/dask.html>`_ to be installed.
+
+    Time must be indexed by the ``ocean_time`` coordinate. Horizontal
+    coordinates ``lat_rho`` and ``lon_rho`` must be present in the first file.
+    Depth coordinates ``h``, ``Cs_r`` and vertical parameters ``hc``,
+    ``Vtransform`` must also be present.
+
+|
+
+.. confval:: ambient.roms.latitude
+
+    :type: number
+
+    Latitude of the relevant data points from :confval:`ambient.roms.file`.
+
+|
+
+.. confval:: ambient.roms.longitude
+
+    :type: number
+
+    Longitude of the relevant data points from :confval:`ambient.roms.file`.
+
+|
+
+.. confval:: ambient.roms.azimuth
+
+    :type: number
+    :units: degrees
+
+    Azimuthal direction of the co-flow direction (i.e., the direction of the
+    pipe outlet). North is 0 and east is 90.

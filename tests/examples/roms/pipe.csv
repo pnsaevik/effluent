@@ -1,0 +1,12 @@
+# Properties of the pipe and the effluent flow
+#
+#  time: Time since simulation start [s]
+#  flow: Pipe flow rate [m^3/s]
+#  dens: Mass density of effluent wastewater [kg/m^3]
+#  diam: Pipe diameter [m]
+#  depth: Depth of pipe outlet [m]
+#  decline: Direction of pipe outlet (positive is downwards) [degrees]
+#
+            time, flow, dens, diam, depth, decline
+2015-09-07 01:00,    1, 1000,  0.5,    50,       0
+2015-09-07 02:00,    1, 1000,  0.5,    50,       0

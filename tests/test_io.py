@@ -208,6 +208,16 @@ class Test_Ambient_from_config:
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
+    def test_roms_file(self):
+        from pathlib import Path
+        FORCING_glob = str(Path(__file__).parent.joinpath('forcing_?.nc'))
+
+        conf = dict(roms=dict(file=FORCING_glob, latitude=59.03, longitude=5.68, azimuth=0))
+        with effluent.io.Ambient.from_config(conf) as p:
+            dset = p.select(time=np.datetime64('2015-09-07T07'))
+            assert len(dset.depth) > 0
+            assert dset.dens.dims == ('depth', )
+
 
 class Test_Output_from_config:
     @pytest.fixture()
