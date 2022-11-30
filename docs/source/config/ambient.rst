@@ -100,6 +100,9 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     files are assumed to be ordered sequentially in time. The software reads
     the fields ``salt`` and ``temp``, and computes seawater density from them.
 
+    Reading ROMS files requires
+    `dask <https://docs.xarray.dev/en/stable/dask.html>`_ to be installed.
+
     Time must be indexed by the ``ocean_time`` coordinate. Horizontal
     coordinates ``lat_rho`` and ``lon_rho`` must be present in the first file.
     Depth coordinates ``h``, ``Cs_r`` and vertical parameters ``hc``,

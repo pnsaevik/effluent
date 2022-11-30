@@ -17,7 +17,7 @@ def open_location(**kwargs):
     )
 
 
-def open_dataset(file, z_rho=False):
+def open_dataset(file, z_rho=False, dens=False):
     """
     Open ROMS dataset
 
@@ -25,6 +25,7 @@ def open_dataset(file, z_rho=False):
 
     :param file: Name of ROMS file(s), or wildcard pattern
     :param z_rho: True if rho depths should be added (default: False)
+    :param dens: True if density should be added (implies z_rho, default: False)
     :return: An xarray.Dataset object
     """
     fnames = sorted(glob.glob(file))
@@ -43,31 +44,38 @@ def open_dataset(file, z_rho=False):
         combine_attrs='override',
     )
 
+    if dens:
+        z_rho = True
+
     if z_rho:
         dset = add_zrho(dset)
+
+    if dens:
+        dset = add_dens(dset)
 
     return dset
 
 
 def add_zrho(dset):
-    vtrans = dset.get('Vtransform', None)
-    if vtrans in [1, 2]:
-        if dset.Vtransform == 1:
-            z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
-            z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
-        else:
-            z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
-            z_rho_star = z_rho_0 * dset.h
-            z_rho = dset.zeta + z_rho_0 * (dset.zeta + dset.h)
+    vtrans = dset['Vtransform']
 
-        return dset.assign_coords(
-            z_rho=z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),
-            z_rho_star=z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho'),
-        )
-
+    if vtrans == 1:
+        z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
+        z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
+    elif vtrans == 2:
+        z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
+        z_rho_star = z_rho_0 * dset.h
+        z_rho = dset.zeta + z_rho_0 * (dset.zeta + dset.h)
     else:
-        return dset
+        raise ValueError(f'Unknown Vtransform: {vtrans}')
+
+    return dset.assign_coords(
+        z_rho=z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),
+        z_rho_star=z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho'),
+    )
 
 
 def add_dens(dset):
-    pass
+    from effluent.eos import roms_rho
+    dens = roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+    return dset.assign_coords(dens=dens)
