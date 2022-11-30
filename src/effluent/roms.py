@@ -79,3 +79,30 @@ def add_dens(dset):
     from effluent.eos import roms_rho
     dens = roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     return dset.assign_coords(dens=dens)
+
+
+def select_latlon(dset, lat, lon):
+    from .numerics import bilin_inv
+
+    lat_rho = dset.lat_rho.values
+    lon_rho = dset.lon_rho.values
+
+    y, x = bilin_inv(lat, lon, lat_rho, lon_rho)
+
+    x_min = 0.5
+    y_min = 0.5
+    x_max = dset.dims['xi_rho'] - 1.5
+    y_max = dset.dims['eta_rho'] - 1.5
+    x = np.clip(x, x_min, x_max)
+    y = np.clip(y, y_min, y_max)
+
+    dset = dset.interp(
+        xi_rho=x,
+        eta_rho=y,
+        xi_u=x - 0.5,
+        eta_u=int(y + 0.5),
+        xi_v=int(x + 0.5),
+        eta_v=y - 0.5,
+    )
+
+    return dset

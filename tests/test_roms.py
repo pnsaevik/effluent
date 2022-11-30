@@ -37,3 +37,10 @@ class Test_open_dataset:
             dens = dset['dens'].values
             assert np.nanmin(dens) > 900
             assert np.nanmax(dens) < 1100
+
+
+class Test_select_latlon:
+    def test_returns_single_point(self):
+        with roms.open_dataset(file=FORCING_1, z_rho=True) as dset:
+            dset2 = roms.select_latlon(dset, lat=59.03, lon=5.68)
+            assert dset2.temp.dims == ('ocean_time', 's_rho')
