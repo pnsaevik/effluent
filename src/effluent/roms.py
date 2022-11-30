@@ -1,5 +1,6 @@
 import xarray as xr
 import numpy as np
+import glob
 
 
 def open_location(**kwargs):
@@ -13,4 +14,22 @@ def open_location(**kwargs):
             v=xr.Variable(('time', 'depth'), [[6, 7, 8], [9, 0, 1]]),
             dens=xr.Variable(('time', 'depth'), [[2, 3, 4], [5, 6, 7]]),
         ),
+    )
+
+
+def open_dataset(file):
+    fnames = sorted(glob.glob(file))
+    if len(fnames) == 0:
+        raise ValueError(f'No files found: "{fnames}"')
+
+    return xr.open_mfdataset(
+        paths=fnames,
+        chunks={'ocean_time': 1},
+        concat_dim='ocean_time',
+        compat='override',
+        data_vars='minimal',
+        coords='minimal',
+        combine='nested',
+        join='override',
+        combine_attrs='override',
     )
