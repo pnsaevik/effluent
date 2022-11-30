@@ -3,18 +3,33 @@ import numpy as np
 import glob
 
 
-def open_location(**kwargs):
-    return xr.Dataset(
-        data_vars=dict(
-            time=np.array(['1970-01-01', '1970-01-01T00:20']).astype('datetime64[s]'),
-            depth=[0, 10, 20],
-        ),
-        coords=dict(
-            u=xr.Variable(('time', 'depth'), [[0, 1, 2], [3, 4, 5]]),
-            v=xr.Variable(('time', 'depth'), [[6, 7, 8], [9, 0, 1]]),
-            dens=xr.Variable(('time', 'depth'), [[2, 3, 4], [5, 6, 7]]),
-        ),
-    )
+def open_location(file, latitude, longitude, azimuth):
+    """
+    Open a ROMS dataset and return data for a specific location
+
+    The output coordinates are 'time' and 'depth'
+
+    :param file: Name of ROMS file(s), or wildcard pattern
+    :param latitude: Latitude of location
+    :param longitude: Longitude of location
+    :param azimuth: Azimuthal orientation of u velocity (0 is north, 90 is east)
+    :return: An xarray.Dataset object
+    """
+
+    # Select position
+    dset = open_dataset(file, z_rho=True, dens=True)
+    dset = select_latlon(dset, latitude, longitude)
+
+    # Set coordinates
+    dset = dset.rename(z_rho_star='depth', ocean_time='time')
+    dset = dset.swap_dims({'s_rho': 'depth'})
+
+    # Rotate velocity
+    u = compute_azimuthal_velocity(dset, azimuth * (np.pi / 180))
+    v = compute_azimuthal_velocity(dset, (azimuth + 90) * (np.pi / 180))
+    dset = dset.assign(u=u, v=v)
+
+    return dset
 
 
 def open_dataset(file, z_rho=False, dens=False):
@@ -44,10 +59,7 @@ def open_dataset(file, z_rho=False, dens=False):
         combine_attrs='override',
     )
 
-    if dens:
-        z_rho = True
-
-    if z_rho:
+    if z_rho or dens:
         dset = add_zrho(dset)
 
     if dens:

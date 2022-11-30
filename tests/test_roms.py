@@ -65,3 +65,16 @@ class Test_compute_azimuthal_velocity:
         )
         vel = roms.compute_azimuthal_velocity(dset, azimuth=angle_vel)
         assert vel.values.round().astype('i4').tolist() == [46, 20, -46, -20, 40, -30, -40, 30]
+
+
+class Test_open_location:
+    def test_correct_vars_and_dims(self):
+        dset = xr.Dataset()
+        try:
+            dset = roms.open_location(FORCING_glob, latitude=59.03, longitude=5.68, azimuth=0)
+            assert dset.dens.dims == ('time', 'depth')
+            assert dset.u.dims == ('time', 'depth')
+            assert dset.v.dims == ('time', 'depth')
+
+        finally:
+            dset.close()
