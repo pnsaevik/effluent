@@ -248,7 +248,7 @@ def sdepth(H, Hc, C, stagger="rho", Vtransform=1):
 
 
 def _roms_horizontal_transform(file_name):
-    from .utils import bilin_inv
+    from .numerics import bilin_inv
 
     with _roms_open(file_name) as dset:
         lat_rho = dset.variables['lat_rho'].values
