@@ -37,8 +37,8 @@ class Model:
         return m
 
     def data(self, time):
-        pipe = self.pipe.select(time)
-        ambient = self.ambient.select(time)
+        pipe = self.pipe.select(time).compute()
+        ambient = self.ambient.select(time).compute()
         return pipe, ambient
 
     def run(self):

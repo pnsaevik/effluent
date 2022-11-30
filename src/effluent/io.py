@@ -425,6 +425,11 @@ class AmbientRoms(Ambient):
                 longitude=self.longitude,
                 azimuth=self.azimuth,
             )
+
+            keep_vars = ['time', 'depth', 'u', 'v', 'dens']
+            drop_vars = [v for v in dset.variables if v not in keep_vars]
+            dset = dset.drop_vars(drop_vars)
+
             self.dset = dset
             self._tmin = dset.time[0].values
             self._tmax = dset.time[-1].values

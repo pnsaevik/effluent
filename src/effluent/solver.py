@@ -25,7 +25,20 @@ class Solver:
         self.stop = 60
         self.step = 1
 
-        self.data = None
+        self._data = None
+        self._zmin = None
+        self._zmax = None
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+        ambient = self.data[1]
+        self._zmin = ambient.depth[0].values
+        self._zmax = ambient.depth[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -65,9 +78,7 @@ class Solver:
 
     def ambient_data(self, depth):
         ambient = self.data[1]
-        zmin = ambient.depth[0].values
-        zmax = ambient.depth[-1].values
-        clipped_depth = np.clip(depth, zmin, zmax)
+        clipped_depth = np.clip(depth, self._zmin, self._zmax)
         return ambient.interp(depth=clipped_depth)
 
     def pipe_data(self):
