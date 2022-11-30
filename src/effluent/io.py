@@ -82,6 +82,8 @@ class Ambient:
             return Ambient.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
             return Ambient.from_nc_file(**conf['nc'])
+        elif 'roms' in conf:
+            return AmbientRoms(**conf['roms'])
         else:
             return Ambient.from_mapping(**conf)
 
@@ -135,6 +137,9 @@ class Ambient:
         )
         return Ambient.from_dataset(dset)
 
+    def close(self):
+        pass
+
 
 class AmbientXarray(Ambient):
     def __init__(self, dset):
@@ -161,6 +166,9 @@ class Output:
     def write(self, time, result):
         return NotImplementedError
 
+    def close(self):
+        pass
+
 
 class OutputCSV(Output):
     def __init__(self, file, variables):
@@ -180,13 +188,16 @@ class OutputCSV(Output):
             raise TypeError(f'Expected file name or stream, found "{type(file)}"')
 
     def __enter__(self):
-        if self.dset is None:
-            self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
-            self._blank_file = True
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    def open(self):
+        if self.dset is None:
+            self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
+            self._blank_file = True
 
     def close(self):
         if self.dset is not None:
@@ -202,6 +213,8 @@ class OutputCSV(Output):
         return out
 
     def write(self, time, result):
+        self.open()  # Lazy opening: Only effective if first time
+
         df = result.to_dataframe()
         df['release_time'] = time
         df = df.reset_index().set_index(['release_time', 't']).reset_index()
@@ -243,12 +256,16 @@ class OutputNC(Output):
             raise TypeError(f'Unknown file type: {type(file)}')
 
     def __enter__(self):
-        self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
-        self._blank_file = True
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    def open(self):
+        if self.dset is None:
+            self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
+            self._blank_file = True
 
     def close(self):
         if self.dset is not None:
@@ -267,6 +284,8 @@ class OutputNC(Output):
         return out
 
     def write(self, time, result):
+        self.open()  # Lazy opening: Only effective if first time
+
         result = result.assign_coords(release_time=time)
         result = result.expand_dims('release_time')
 
@@ -374,3 +393,49 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
         xr_var = xr_dset[name]
         nc_var = nc_dset.variables[name]
         nc_var[num_old_items:num_items] = xr_var.values
+
+
+class AmbientRoms(Ambient):
+    def __init__(self, file, latitude, longitude, azimuth):
+        self.file = file
+        self.latitude = latitude
+        self.longitude = longitude
+        self.azimuth = azimuth
+
+        self.dset = None
+        self._tmin = None
+        self._tmax = None
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    def open(self):
+        if self.dset is None:
+            import effluent.roms
+            dset = effluent.roms.open_location(
+                file=self.file,
+                latitude=self.latitude,
+                longitude=self.longitude,
+                azimuth=self.azimuth,
+            )
+            self.dset = dset
+            self._tmin = dset.time[0].values
+            self._tmax = dset.time[-1].values
+
+    def close(self):
+        if self.dset is not None:
+            self.dset.close()
+            self.dset = None
+
+    def select(self, time):
+        self.open()
+
+        clipped_time = np.clip(time, self._tmin, self._tmax)
+        return self.dset.interp(time=clipped_time)

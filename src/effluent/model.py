@@ -53,12 +53,16 @@ class Model:
         times = np.datetime64(self.start) + np.arange(num_times) * one_sec * self.step
 
         # Do timestepping
-        with self.output as output:
+        try:
             for time in times:
                 self.solver.data = self.data(time)
                 result = self.solver.solve()
-                output.write(time, result)
+                self.output.write(time, result)
                 yield result
+
+        finally:
+            self.output.close()
+            self.ambient.close()
 
 
 def load_config(fname_or_dict):
