@@ -72,10 +72,9 @@ class Pipe:
 
 
 class Ambient:
-    def __init__(self, dset):
-        self._dset = dset
-        self._tmin = dset.time[0].values
-        self._tmax = dset.time[-1].values
+    @abc.abstractmethod
+    def select(self, time):
+        return NotImplementedError
 
     @staticmethod
     def from_config(conf):
@@ -104,7 +103,7 @@ class Ambient:
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
         assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
-        return Ambient(dset)
+        return AmbientXarray(dset)
 
     @staticmethod
     def from_csv_file(file):
@@ -135,6 +134,13 @@ class Ambient:
             ),
         )
         return Ambient.from_dataset(dset)
+
+
+class AmbientXarray(Ambient):
+    def __init__(self, dset):
+        self._dset = dset
+        self._tmin = dset.time[0].values
+        self._tmax = dset.time[-1].values
 
     def select(self, time):
         clipped_time = np.clip(time, self._tmin, self._tmax)
