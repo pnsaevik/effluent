@@ -12,8 +12,8 @@ class Model:
         self.output = None
         self.solver = None
 
-        self.start = 0
-        self.stop = 0
+        self.start = np.datetime64('1970-01-01')
+        self.stop = np.datetime64('1970-01-01')
         self.step = 86400
 
     @staticmethod
@@ -46,9 +46,13 @@ class Model:
             pass
 
     def irun(self):
-        times = np.arange(self.start, self.stop + self.step / 2, self.step)
-        times = np.datetime64('1970-01-01', 'us') + times * np.timedelta64(1000000, 'us')
+        # Compute times
+        one_sec = np.timedelta64(1000000, 'us')
+        duration = (np.datetime64(self.stop) - np.datetime64(self.start)) / one_sec
+        num_times = int(duration / self.step) + 1
+        times = np.datetime64(self.start) + np.arange(num_times) * one_sec * self.step
 
+        # Do timestepping
         with self.output as output:
             for time in times:
                 self.solver.data = self.data(time)
@@ -66,14 +70,6 @@ def load_config(fname_or_dict):
     solver = c.pop('solver', {})
     trajectory = c['output'].pop('trajectory')
     model = c.pop('model', {})
-
-    # Convert dates to posix times
-    np_epoch = np.datetime64('1970-01-01')
-    for key in ['start', 'stop']:
-        if key in release:
-            dt64 = np.datetime64(release[key])
-            posix = (dt64 - np_epoch) / np.timedelta64(1, 's')
-            release[key] = posix
 
     c['timestepper'] = release
     c['solver'] = {**solver, **trajectory, **model}
