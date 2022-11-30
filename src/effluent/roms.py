@@ -106,3 +106,12 @@ def select_latlon(dset, lat, lon):
     )
 
     return dset
+
+
+def compute_azimuthal_velocity(dset, azimuth):
+    assert dset.angle.units == "radians"
+
+    u = dset.u
+    v = dset.v
+    theta = azimuth + np.pi/2 - dset.angle
+    return u * np.cos(theta) + v * np.sin(theta)
