@@ -16,8 +16,17 @@ class Test_open_dataset:
             assert dset['h'].dims == ('eta_rho', 'xi_rho')
             assert dset['hc'].dims == ()
 
-    def test_can_include_depth_values(self):
-        with roms.open_dataset(file='forcing_1.nc') as dset:
+    def test_can_add_depth_values(self):
+        with roms.open_dataset(file='forcing_1.nc', z_rho=True) as dset:
+            assert dset['z_rho_star'].dims == ('s_rho', 'eta_rho', 'xi_rho')
+            assert dset['z_rho'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
+
+            depths = dset['z_rho_star'].values
+            assert np.all(depths < 0)
+            assert np.all(depths > -dset['h'].values)
+
+    def test_can_add_dens_values(self):
+        with roms.open_dataset(file='forcing_1.nc', dens=True) as dset:
             assert dset['z_rho_star'].dims == ('s_rho', 'eta_rho', 'xi_rho')
             assert dset['z_rho'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
 

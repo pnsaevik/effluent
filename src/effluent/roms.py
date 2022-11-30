@@ -17,14 +17,14 @@ def open_location(**kwargs):
     )
 
 
-def open_dataset(file, z_rho=True):
+def open_dataset(file, z_rho=False):
     """
     Open ROMS dataset
 
     Variables are lazily loaded or computed.
 
     :param file: Name of ROMS file(s), or wildcard pattern
-    :param z_rho: True if rho depths should be added (default: True)
+    :param z_rho: True if rho depths should be added (default: False)
     :return: An xarray.Dataset object
     """
     fnames = sorted(glob.glob(file))
@@ -67,3 +67,7 @@ def add_zrho(dset):
 
     else:
         return dset
+
+
+def add_dens(dset):
+    pass
