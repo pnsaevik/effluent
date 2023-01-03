@@ -121,6 +121,17 @@ class Ambient:
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
         assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in dset:
+            from . import eos
+            data = eos.roms_rho(
+                temp=dset['temp'].values,
+                salt=dset['salt'].values,
+                depth=dset['depth'].values,
+            )
+            dset = dset.assign(dens=xr.Variable(dset['temp'].dims, data))
+
         return AmbientXarray(dset)
 
     @staticmethod
@@ -137,20 +148,19 @@ class Ambient:
         return Ambient.from_dataframe(df)
 
     @staticmethod
-    def from_mapping(time, depth, coflow, crossflow, dens):
+    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
         shp = (len(time), len(depth))
-        u = np.broadcast_to(coflow, shp)
-        v = np.broadcast_to(crossflow, shp)
-        d = np.broadcast_to(dens, shp)
 
-        dset = xr.Dataset(
-            coords=dict(time=time, depth=depth),
-            data_vars=dict(
-                coflow=xr.Variable(('time', 'depth'), u),
-                crossflow=xr.Variable(('time', 'depth'), v),
-                dens=xr.Variable(('time', 'depth'), d),
-            ),
-        )
+        variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
+                         temp=temp)
+
+        dset = xr.Dataset(coords=dict(time=time, depth=depth))
+        for k, v in variables.items():
+            if v is None:
+                continue
+            data = np.broadcast_to(v, shp)
+            dset = dset.assign(**{k: xr.Variable(('time', 'depth'), data)})
+
         return Ambient.from_dataset(dset)
 
     def close(self):

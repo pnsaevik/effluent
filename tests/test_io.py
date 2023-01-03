@@ -185,6 +185,21 @@ class Test_Ambient_from_config:
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3, 3, 3]
 
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object),
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2], [3, 4, 5]],
+            crossflow=[[6, 7, 8], [9, 0, 1]],
+            temp=[[2, 3, 4], [5, 6, 7]],
+            salt=[[22, 23, 24], [25, 26, 27]],
+        )
+        p = effluent.io.Ambient.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1019 < dset.dens.values.mean() < 1020
+
     def test_csv_file(self):
         buf = io.StringIO("""
                         time, depth, coflow, crossflow, dens

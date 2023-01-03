@@ -65,6 +65,35 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     Mass density of ambient water masses.
     There should be one array for each :confval:`ambient.time` value. Each
     array should have the same number of elements as :confval:`ambient.depth`.
+    Alternatively: Supply both :confval:`ambient.temp` and
+    :confval:`ambient.salt`, in which case the density is computed using the
+    UNESCO seawater equation of state |jackett1995|_.
+
+|
+
+.. confval:: ambient.salt
+
+    :type: array of arrays
+    :units: psu
+
+    Salinity of ambient water masses.
+    There should be one array for each :confval:`ambient.time` value. Each
+    array should have the same number of elements as :confval:`ambient.depth`.
+    Either supply both :confval:`ambient.temp` and :confval:`ambient.salt`,
+    or provide values for :confval:`ambient.dens`.
+
+|
+
+.. confval:: ambient.temp
+
+    :type: array of arrays
+    :units: degrees Celcius
+
+    Temperature of ambient water masses.
+    There should be one array for each :confval:`ambient.time` value. Each
+    array should have the same number of elements as :confval:`ambient.depth`.
+    Either supply both :confval:`ambient.temp` and :confval:`ambient.salt`,
+    or provide values for :confval:`ambient.dens`.
 
 |
 
@@ -133,3 +162,18 @@ external file containing the parameters (:confval:`ambient.csv.file`,
 
     Azimuthal direction of the co-flow direction (i.e., the direction of the
     pipe outlet). North is 0 and east is 90.
+
+|
+
+
+Bibliography
+===================
+
+.. |jackett1995| replace:: (Jackett and Mcdougall, 1995)
+.. _jackett1995: https://doi.org/10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+
+Jackett, D. R., and Mcdougall, T. J. (1995). *Minimal Adjustment of
+Hydrographic Profiles to Achieve Static Stability*. Journal of Atmospheric and
+Oceanic Technology **12**\(2): 381–89.
+`doi:10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+<https://doi.org/10.1175/1520-0426(1995)012\<0381:MAOHPT\>2.0.CO;2>`_.
