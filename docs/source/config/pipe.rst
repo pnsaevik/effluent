@@ -48,7 +48,7 @@ or :confval:`pipe.nc.file`).
     :type: array
     :units: m
 
-    Mass density of effluent wastewater.
+    Diameter of pipe outlet.
     One entry for each :confval:`pipe.time` value.
 
 |
