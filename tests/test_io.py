@@ -115,6 +115,17 @@ class Test_Pipe_from_config:
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4
 
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object), flow=[2, 3], diam=[6, 7],
+            depth=[8, 9], decline=[10, 11], salt=[30, 32], temp=[4, 5],
+        )
+        p = effluent.io.Pipe.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1024 < dset.dens.values.item() < 1025
+
     def test_csv_file(self):
         buf = io.StringIO("""
                         time, flow, dens, diam, depth, decline

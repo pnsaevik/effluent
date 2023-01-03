@@ -50,6 +50,16 @@ class Pipe:
     def from_dataframe(df):
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index('time')
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in df:
+            from . import eos
+            df['dens'] = eos.roms_rho(
+                temp=df['temp'].values,
+                salt=df['salt'].values,
+                depth=df['depth'].values,
+            )
+
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
@@ -61,8 +71,14 @@ class Pipe:
         return Pipe(dset)
 
     @staticmethod
-    def from_mapping(time, flow, dens, decline, diam, depth):
-        data = dict(time=time, flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
+    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+        data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
+        if salt is not None:
+            data['salt'] = salt
+        if temp is not None:
+            data['temp'] = temp
+        if dens is not None:
+            data['dens'] = dens
         df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 

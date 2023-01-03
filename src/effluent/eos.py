@@ -3,6 +3,7 @@ import numpy as np
 
 def roms_rho(temp, salt, depth):
     # Taken from the ROMS source file: rho_eos.F
+    # Bibliographic reference: https://doi.org/10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
 
     # Coefficients
     A00 = +1.909256e+04

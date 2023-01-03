@@ -40,6 +40,33 @@ or :confval:`pipe.nc.file`).
 
     Mass density of effluent wastewater.
     One entry for each :confval:`pipe.time` value.
+    Alternatively: Supply both :confval:`pipe.temp` and :confval:`pipe.salt`,
+    in which case the density is computed using the UNESCO seawater equation
+    of state |jackett1995|_.
+
+|
+
+.. confval:: pipe.temp
+
+    :type: array
+    :units: degrees Celcius
+
+    Temperature of effluent wastewater.
+    One entry for each :confval:`pipe.time` value.
+    Either supply both :confval:`pipe.temp` and :confval:`pipe.salt`, or
+    supply values for :confval:`pipe.dens`.
+
+|
+
+.. confval:: pipe.salt
+
+    :type: array
+    :units: kg / m³
+
+    Salinity of effluent wastewater.
+    One entry for each :confval:`pipe.time` value.
+    Either supply both :confval:`pipe.temp` and :confval:`pipe.salt`, or
+    supply values for :confval:`pipe.dens`.
 
 |
 
@@ -92,3 +119,17 @@ or :confval:`pipe.nc.file`).
    `netCDF4 file <https://unidata.github.io/netcdf4-python/>`_.
    The file must have one variable for each pipe parameter, indexed by the time
    coordinate.
+
+|
+
+Bibliography
+===================
+
+.. |jackett1995| replace:: (Jackett and Mcdougall, 1995)
+.. _jackett1995: https://doi.org/10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+
+Jackett, D. R., and Mcdougall, T. J. (1995). *Minimal Adjustment of
+Hydrographic Profiles to Achieve Static Stability*. Journal of Atmospheric and
+Oceanic Technology **12**\(2): 381–89.
+`doi:10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+<https://doi.org/10.1175/1520-0426(1995)012\<0381:MAOHPT\>2.0.CO;2>`_.
