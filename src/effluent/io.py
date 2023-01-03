@@ -83,6 +83,10 @@ class Pipe:
         return Pipe.from_dataframe(df)
 
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._time_min, self._time_max)
         return self._dset.interp(time=clipped_time)
 
@@ -174,6 +178,10 @@ class AmbientXarray(Ambient):
         self._tmax = dset.time[-1].values
 
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._tmin, self._tmax)
         return self._dset.interp(time=clipped_time)
 
