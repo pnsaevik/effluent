@@ -40,10 +40,12 @@ class Pipe:
         return Pipe.from_dataframe(df)
 
     @staticmethod
-    def _compute_uw(flow, decline):
+    def _compute_uw(flow, decline, diam):
+        area = np.pi * diam * diam * 0.25
+        speed = flow / area
         theta = decline * np.pi / 180
-        u = flow * np.cos(theta)
-        w = flow * np.sin(theta)
+        u = speed * np.cos(theta)
+        w = speed * np.sin(theta)
         return u, w
 
     @staticmethod
@@ -55,7 +57,7 @@ class Pipe:
 
     @staticmethod
     def from_dataset(dset):
-        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
+        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
 
