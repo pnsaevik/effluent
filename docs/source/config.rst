@@ -20,7 +20,7 @@ file ``config.toml``, written in the `TOML file format <https://toml.io/en/>`_.
 Here we describe the different options available:
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     config/pipe
     config/ambient
