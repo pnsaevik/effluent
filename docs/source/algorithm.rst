@@ -36,7 +36,7 @@ profiles are equivalent if
 
 Since the top-hat formulation is easier to work with and yields equivalent
 results, we use this formulation in the following derivation. The
-end results can be converted back to a gaussian distribution if required.
+end results can be converted back to a gaussian distribution if desired.
 
 Buoyant jets eventually develop a non-gaussian, kidney shaped cross sectional
 profile with a double peak of concentration maxima. In this case, we identify
