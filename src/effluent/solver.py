@@ -78,6 +78,9 @@ class Solver:
 
     def ambient_data(self, depth):
         ambient = self.data[1]
+        # Cannot interpolate if there is only one entry
+        if ambient.dims['depth'] == 1:
+            return ambient.isel(depth=0)
         clipped_depth = np.clip(depth, self._zmin, self._zmax)
         return ambient.interp(depth=clipped_depth)
 
