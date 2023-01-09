@@ -18,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: "Install prerequisites"
-          command: pip install pytest sphinx dask
+          command: pip install pytest sphinx dask matplotlib
       - run:
           name: "Install package"
           command: pip install .
