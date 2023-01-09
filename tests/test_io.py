@@ -115,6 +115,28 @@ class Test_Pipe_from_config:
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4
 
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object), flow=[2, 3], diam=[6, 7],
+            depth=[8, 9], decline=[10, 11], salt=[30, 32], temp=[4, 5],
+        )
+        p = effluent.io.Pipe.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1024 < dset.dens.values.item() < 1025
+
+    def test_can_have_single_time_entry(self):
+        posix = np.array([0])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object), flow=[2], dens=[4], diam=[6], depth=[8],
+            decline=[10],
+        )
+        p = effluent.io.Pipe.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert dset.dens.values.item() == 4
+
     def test_csv_file(self):
         buf = io.StringIO("""
                         time, flow, dens, diam, depth, decline
@@ -160,6 +182,20 @@ class Test_Ambient_from_config:
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
+    def test_can_have_single_time_entry(self):
+        posix = np.array([0])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object),
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2]],
+            crossflow=[[6, 7, 8]],
+            dens=[[2, 3, 4]],
+        )
+        p = effluent.io.Ambient.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert dset.dens.values.tolist() == [2, 3, 4]
+
     def test_explicit_mapping_with_singlenums(self):
         posix = np.array([0, 1200])
         time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
@@ -173,6 +209,21 @@ class Test_Ambient_from_config:
         p = effluent.io.Ambient.from_config(conf)
         dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3, 3, 3]
+
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object),
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2], [3, 4, 5]],
+            crossflow=[[6, 7, 8], [9, 0, 1]],
+            temp=[[2, 3, 4], [5, 6, 7]],
+            salt=[[22, 23, 24], [25, 26, 27]],
+        )
+        p = effluent.io.Ambient.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1019 < dset.dens.values.mean() < 1020
 
     def test_csv_file(self):
         buf = io.StringIO("""

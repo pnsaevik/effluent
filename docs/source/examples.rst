@@ -8,4 +8,4 @@ complete configuration file and output file.
 .. toctree::
     :maxdepth: 1
 
-    examples/neutral
+    examples/jet

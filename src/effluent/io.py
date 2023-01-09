@@ -40,10 +40,12 @@ class Pipe:
         return Pipe.from_dataframe(df)
 
     @staticmethod
-    def _compute_uw(flow, decline):
+    def _compute_uw(flow, decline, diam):
+        area = np.pi * diam * diam * 0.25
+        speed = flow / area
         theta = decline * np.pi / 180
-        u = flow * np.cos(theta)
-        w = flow * np.sin(theta)
+        u = speed * np.cos(theta)
+        w = speed * np.sin(theta)
         return u, w
 
     @staticmethod
@@ -55,18 +57,38 @@ class Pipe:
 
     @staticmethod
     def from_dataset(dset):
-        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
+        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in dset:
+            from . import eos
+            dens = eos.roms_rho(
+                temp=dset['temp'].values,
+                salt=dset['salt'].values,
+                depth=dset['depth'].values,
+            )
+            dset = dset.assign(dens=xr.Variable(dset['temp'].dims, dens))
         return Pipe(dset)
 
     @staticmethod
-    def from_mapping(time, flow, dens, decline, diam, depth):
-        data = dict(time=time, flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
+    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+        data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
+        if salt is not None:
+            data['salt'] = salt
+        if temp is not None:
+            data['temp'] = temp
+        if dens is not None:
+            data['dens'] = dens
         df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._time_min, self._time_max)
         return self._dset.interp(time=clipped_time)
 
@@ -105,6 +127,17 @@ class Ambient:
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
         assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in dset:
+            from . import eos
+            data = eos.roms_rho(
+                temp=dset['temp'].values,
+                salt=dset['salt'].values,
+                depth=dset['depth'].values,
+            )
+            dset = dset.assign(dens=xr.Variable(dset['temp'].dims, data))
+
         return AmbientXarray(dset)
 
     @staticmethod
@@ -121,20 +154,19 @@ class Ambient:
         return Ambient.from_dataframe(df)
 
     @staticmethod
-    def from_mapping(time, depth, coflow, crossflow, dens):
+    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
         shp = (len(time), len(depth))
-        u = np.broadcast_to(coflow, shp)
-        v = np.broadcast_to(crossflow, shp)
-        d = np.broadcast_to(dens, shp)
 
-        dset = xr.Dataset(
-            coords=dict(time=time, depth=depth),
-            data_vars=dict(
-                coflow=xr.Variable(('time', 'depth'), u),
-                crossflow=xr.Variable(('time', 'depth'), v),
-                dens=xr.Variable(('time', 'depth'), d),
-            ),
-        )
+        variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
+                         temp=temp)
+
+        dset = xr.Dataset(coords=dict(time=time, depth=depth))
+        for k, v in variables.items():
+            if v is None:
+                continue
+            data = np.broadcast_to(v, shp)
+            dset = dset.assign(**{k: xr.Variable(('time', 'depth'), data)})
+
         return Ambient.from_dataset(dset)
 
     def close(self):
@@ -148,6 +180,10 @@ class AmbientXarray(Ambient):
         self._tmax = dset.time[-1].values
 
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._tmin, self._tmax)
         return self._dset.interp(time=clipped_time)
 
