@@ -60,6 +60,7 @@ release = getversion()
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 nitpicky = True

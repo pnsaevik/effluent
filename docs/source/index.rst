@@ -50,7 +50,7 @@ In both cases, simulation details are specified in the
 file ``config.toml``, written in the `TOML file format <https://toml.io/en/>`_.
 A samle config file is shown below:
 
-.. literalinclude:: ../../tests/examples/neutral/config.toml
+.. literalinclude:: ../../tests/examples/jet/config.toml
     :language: toml
 
 Other input and output formats are also available. See the rest of the
