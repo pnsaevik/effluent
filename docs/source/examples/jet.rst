@@ -12,19 +12,6 @@ To run the example, run :code:`python -m effluent config.toml` from the command
 line. Alternatively, execute the statement :code:`effluent.run("config.toml")`
 from within python.
 
-.. doctest::
-
-    >>> 1 + 2
-    3
-
-.. testcode::
-
-    print('Hello')
-
-.. testoutput::
-
-    Hallo
-
 
 .. plot::
     :context:
