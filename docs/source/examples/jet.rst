@@ -42,18 +42,18 @@ from within python.
     :context:
     :include-source:
 
-    import matplotlib.pyplot as plt
-    import pandas as pd
+    #import matplotlib.pyplot as plt
+    #import pandas as pd
 
-    df = pd.read_csv("out.csv")
+    #df = pd.read_csv("out.csv")
 
-    diam = 0.5
-    flow = 0.2
-    area = 3.14 * diam * diam * 0.25
-    u0 = flow / area
+    #diam = 0.5
+    #flow = 0.2
+    #area = 3.14 * diam * diam * 0.25
+    #u0 = flow / area
 
-    dist = 6.2 + df.x.values / 0.5
-    u = df.u.values / u0
+    #dist = 6.2 + df.x.values / 0.5
+    #u = df.u.values / u0
     #plt.loglog(dist, u)
 
     plt.plot([1, 2, 3], [4, 5, 6], 'g')
