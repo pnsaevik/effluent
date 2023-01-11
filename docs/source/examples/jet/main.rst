@@ -33,6 +33,7 @@ We load the output data using ``pandas``
 
     import pandas as pd
     df = pd.read_csv("out.csv")
+    plt.plot([1, 2, 3], [4, 5, 6])
 
 and plot the centerline and radius using ``matplotlib``
 
