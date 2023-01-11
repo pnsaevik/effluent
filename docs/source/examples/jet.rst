@@ -12,6 +12,17 @@ To run the example, run :code:`python -m effluent config.toml` from the command
 line. Alternatively, execute the statement :code:`effluent.run("config.toml")`
 from within python.
 
+.. plot::
+    :include-source:
+
+    plt.plot([1, 2, 3], [4, 5, 6])
+
+.. plot::
+    :include-source:
+
+    plt.plot([1, 2, 3], [4, 5, 6], "r")
+    plt.show()
+
 
 .. plot::
     :context:
