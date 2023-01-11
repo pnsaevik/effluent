@@ -69,7 +69,6 @@ html_css_files = [
 ]
 
 # Matplotlib extension options
-plot_include_source = True
 plot_html_show_source_link = False
 plot_formats = ['png']
 plot_html_show_formats = False
