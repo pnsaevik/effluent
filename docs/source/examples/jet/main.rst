@@ -13,17 +13,6 @@ line. Alternatively, execute the statement :code:`effluent.run("config.toml")`
 from within python.
 
 .. plot::
-    :include-source:
-
-    plt.plot([1, 2, 3], [4, 5, 6])
-
-.. plot::
-    :include-source:
-
-    plt.plot([1, 2, 3], [4, 5, 6], "r")
-    plt.show()
-
-.. plot::
     :context:
     :include-source:
 
@@ -40,5 +29,3 @@ from within python.
     dist = 6.2 + df.x.values / 0.5
     u = df.u.values / u0
     plt.loglog(dist, u)
-
-    plt.plot([1, 2, 3], [4, 5, 6], 'g')
