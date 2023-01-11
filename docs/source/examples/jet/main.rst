@@ -31,9 +31,15 @@ We load the output data using ``pandas``
     :context:
     :include-source:
 
+    plt.plot([1, 2, 3], [4, 5, 6])
+
+
+.. plot::
+    :context:
+    :include-source:
+
     import pandas as pd
     df = pd.read_csv("out.csv")
-    plt.plot([1, 2, 3], [4, 5, 6])
 
 and plot the centerline and radius using ``matplotlib``
 
