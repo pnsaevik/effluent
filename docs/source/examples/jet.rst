@@ -40,6 +40,7 @@ from within python.
 
 .. plot::
     :context:
+    :include-source:
 
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -53,7 +54,9 @@ from within python.
 
     dist = 6.2 + df.x.values / 0.5
     u = df.u.values / u0
-    plt.loglog(dist, u)
+    #plt.loglog(dist, u)
+
+    plt.plot([1, 2, 3], [4, 5, 6], 'g')
 
 
 
