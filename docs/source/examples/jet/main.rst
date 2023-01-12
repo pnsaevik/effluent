@@ -50,7 +50,8 @@ and plot the centerline and radius using ``matplotlib``
     plt.plot(x, center, color='k', linewidth=2, label='Centerline')
     plt.plot(x, upper, color='k', linewidth=.5)
     plt.plot(x, lower, color='k', linewidth=.5)
-    plt.fill_between(x, lower, upper, color="#e0e0e0", label='Plume extent')
+    plt.fill_between(x, lower, upper, color="#e0e0e0",
+                     label='Plume extent')
 
     plt.xlabel('Distance from pipe outlet (m)')
     plt.ylabel('Depth below surface (m)')
