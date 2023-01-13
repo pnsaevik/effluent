@@ -13,3 +13,4 @@ simulation.
     examples/buoyant/main
     examples/stratified/main
     examples/crossflow/main
+    examples/coflow/main
