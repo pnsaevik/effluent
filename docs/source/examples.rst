@@ -12,3 +12,4 @@ simulation.
     examples/jet/main
     examples/buoyant/main
     examples/stratified/main
+    examples/crossflow/main
