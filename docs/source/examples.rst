@@ -10,3 +10,4 @@ simulation.
     :maxdepth: 1
 
     examples/jet/main
+    examples/buoyant/main
