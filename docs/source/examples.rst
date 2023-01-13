@@ -14,3 +14,4 @@ simulation.
     examples/stratified/main
     examples/crossflow/main
     examples/coflow/main
+    examples/inclined/main
