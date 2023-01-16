@@ -28,7 +28,7 @@ coordinate transform is given in the
 `ROMS documentation <https://www.myroms.org/wiki/Vertical_S-coordinate>`_.
 
 Internally, ``effluent`` uses the built-in function ``open_location`` to
-extract the density and velocity the given location. Here, we use the same
+extract the density and velocity at the given location. Here, we use the same
 function for visualization purposes.
 
 .. plot::
