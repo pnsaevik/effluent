@@ -55,7 +55,7 @@ function for visualization purposes.
         v = roms.v.values
 
     # Prepare plot
-    fig, ax1 = plt.subplots()
+    ax1 = plt.gca()
     ax2 = ax1.twiny()
 
     # Plot velocity and density
