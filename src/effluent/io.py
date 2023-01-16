@@ -207,8 +207,10 @@ class Output:
 
 
 class OutputCSV(Output):
-    def __init__(self, file, variables):
+    def __init__(self, file, variables, float_format, separator):
         self.variables = variables
+        self.float_format = float_format
+        self.separator = separator
         self._blank_file = True
 
         if isinstance(file, str):
@@ -244,7 +246,9 @@ class OutputCSV(Output):
     def from_config(conf):
         out = OutputCSV(
             file=conf['csv']['file'],
-            variables=conf.get('variables', None)
+            variables=conf.get('variables', None),
+            float_format=conf['csv'].get('float_format', '%.10g'),
+            separator=conf.get('separator', ','),
         )
         return out
 
@@ -264,7 +268,7 @@ class OutputCSV(Output):
             self.dset,
             line_terminator='\n',
             header=self._blank_file,
-            float_format='%.10g',
+            float_format=self.float_format,
             index=False,
         )
         self._blank_file = False
