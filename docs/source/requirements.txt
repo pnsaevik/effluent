@@ -2,3 +2,4 @@ matplotlib
 pandas
 xarray
 h5netcdf
+scipy
