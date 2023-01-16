@@ -55,7 +55,7 @@ function for visualization purposes.
         v = roms.v.values
 
     # Prepare plot
-    ax1 = plt.gca()
+    ax1 = plt.gcf().add_axes([0.1, 0.1, .8, .8])
     ax2 = ax1.twiny()
 
     # Plot velocity and density
@@ -68,7 +68,7 @@ function for visualization purposes.
     ax1.set_xlabel('Velocity (m/s)')
     ax1.set_ylabel('Depth (m)')
     ax2.set_xlabel('Density (kg/m3)')
-    plt.legend(handles=lines)
+    ax1.legend(handles=lines)
 
 
 We can visualize the same data in a 3D plot:
