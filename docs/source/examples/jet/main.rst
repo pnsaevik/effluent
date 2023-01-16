@@ -2,6 +2,13 @@
 Pure horizontal jet
 =======================================
 
+.. plot::
+    :context:
+
+    plt.close('all')
+
+|
+
 A pure horizontal jet is the simplest test case, which is also investigated in
 numerous experimental studies. The ``config.toml`` file looks like this:
 

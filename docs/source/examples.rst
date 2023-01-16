@@ -15,3 +15,4 @@ simulation.
     examples/crossflow/main
     examples/coflow/main
     examples/inclined/main
+    examples/roms/main

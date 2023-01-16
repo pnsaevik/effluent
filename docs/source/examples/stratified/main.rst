@@ -2,6 +2,13 @@
 Buoyant jet in stratified ambient
 =======================================
 
+.. plot::
+    :context:
+
+    plt.close('all')
+
+|
+
 In this example, a horizontal freshwater jet is released into a stratified
 water column. The ``config.toml`` file looks like this:
 

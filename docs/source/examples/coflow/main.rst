@@ -2,6 +2,13 @@
 Horizontal jet in coflow
 =======================================
 
+.. plot::
+    :context:
+
+    plt.close('all')
+
+|
+
 A horizontal jet is released into a current, which is in the same direction
 as the pipe outlet. The ambient current velocity is zero initially, but
 increases to 0.1 m/s after one hour.

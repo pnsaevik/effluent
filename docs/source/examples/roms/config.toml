@@ -1,0 +1,24 @@
+# Characteristics of the pipe and the effluent flow
+[pipe]
+time = [2015-09-07T01:00:00]
+flow = [0.2]
+dens = [1000]
+diam = [0.5]
+depth = [50]
+decline = [0]
+
+# Characteristics of the ambient water masses
+[ambient.roms]
+file = "forcing.nc"
+latitude = 59.03
+longitude = 5.68
+azimuth = 45
+
+# Output options
+[output]
+csv.file = "out.csv"
+trajectory.step = 5           # Time between trajectory points [s]
+trajectory.stop = 30          # Time of final trajectory point [s]
+release.start = 2015-09-07T01:00:00    # Time of first release [date]
+release.stop = 2015-09-07T01:00:00     # Time of final release [date]
+release.step = 3600           # Time between releases [s]

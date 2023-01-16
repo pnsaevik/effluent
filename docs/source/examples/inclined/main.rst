@@ -2,6 +2,13 @@
 Inclined heavy jet
 =======================================
 
+.. plot::
+    :context:
+
+    plt.close('all')
+
+|
+
 An inclined jet of salty water enters an environment of
 stagnant freshwater.
 The ``config.toml`` file looks like this:

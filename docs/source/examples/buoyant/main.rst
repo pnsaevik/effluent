@@ -2,6 +2,13 @@
 Buoyant jet in stagnant ambient
 =======================================
 
+.. plot::
+    :context:
+
+    plt.close('all')
+
+|
+
 In this example, a horizontal freshwater jet enters an environment of
 stagnant, salty water. The ``config.toml`` file looks like this:
 
