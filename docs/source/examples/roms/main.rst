@@ -111,6 +111,12 @@ We can visualize the same data in a 3D plot:
         location='left',
     )
     fig.tight_layout()
+
+a
+
+.. plot::
+    :context:
+
     plt.show()
 
 
