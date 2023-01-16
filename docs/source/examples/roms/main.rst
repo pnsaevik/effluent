@@ -25,6 +25,14 @@ extract the density and velocity at the given location. Here, we use the same
 function for visualization purposes.
 
 .. plot::
+    :context: close-figs
+    :include-source:
+
+    plt.show()
+
+b
+
+.. plot::
     :context: reset
     :include-source:
 
