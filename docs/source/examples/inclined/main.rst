@@ -2,14 +2,6 @@
 Inclined heavy jet
 =======================================
 
-.. plot::
-    :context:
-
-    plt.clf()
-    plt.close('all')
-
-|
-
 An inclined jet of salty water enters an environment of
 stagnant freshwater.
 The ``config.toml`` file looks like this:
@@ -29,7 +21,7 @@ We plot the centerline and plume boundary using
 `matplotlib <https://matplotlib.org/>`_
 
 .. plot::
-    :context:
+    :context: reset
     :include-source:
 
     import matplotlib.pyplot as plt

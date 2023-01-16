@@ -2,14 +2,6 @@
 Pure horizontal jet
 =======================================
 
-.. plot::
-    :context:
-
-    plt.clf()
-    plt.close('all')
-
-|
-
 A pure horizontal jet is the simplest test case, which is also investigated in
 numerous experimental studies. The ``config.toml`` file looks like this:
 
@@ -44,7 +36,7 @@ This produces an output file named ``out.csv``:
 We load the output data using `pandas <https://pandas.pydata.org/>`_
 
 .. plot::
-    :context:
+    :context: reset
     :include-source:
 
     import pandas as pd
@@ -84,7 +76,7 @@ Tracer concentration is proportional to plume speed and cross-sectional
 area. Here is one way of visualizing the concentration evolution:
 
 .. plot::
-    :context:
+    :context: close-figs
     :include-source:
 
     # Extract data
@@ -102,7 +94,6 @@ area. Here is one way of visualizing the concentration evolution:
     rr = np.interp(xx, x, r)
     dilu = np.interp(xx, x, dilution)
     dilu[(z[0] - rr > zz) | (zz > z[0] + rr)] = np.nan
-    plt.clf()
     plt.pcolormesh(xx, zz, dilu, cmap='gray', clim=(1, 7))
 
     # Set visual plot properties
@@ -122,11 +113,10 @@ twice as large as the corresponding top-hat mean concentration. The top-hat
 radius equals the gaussian radius times the square root of two.
 
 .. plot::
-    :context:
+    :context: close-figs
     :include-source:
 
     import numpy as np
-    plt.clf()
 
     # Plot fuzzy plume
     depth = df.z.values[0]

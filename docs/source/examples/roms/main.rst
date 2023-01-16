@@ -2,14 +2,6 @@
 Reading ambient data from ROMS
 =======================================
 
-.. plot::
-    :context:
-
-    plt.clf()
-    plt.close('all')
-
-|
-
 In this example, a horizontal jet of freshwater enters an ocean environment.
 The properties of the ambient water masses are taken from the numerical ocean
 model `ROMS <https://myroms.org>`_.
@@ -33,7 +25,7 @@ extract the density and velocity at the given location. Here, we use the same
 function for visualization purposes.
 
 .. plot::
-    :context:
+    :context: reset
     :include-source:
 
     import effluent.roms
@@ -55,15 +47,8 @@ function for visualization purposes.
         v = roms.v.values
 
     # Prepare plot
-    plt.clf()
     ax1 = plt.gcf().add_axes([0.1, 0.1, .8, .8])
-    ax1.plot([1, 2, 3], [4, 5, 6])
     ax2 = ax1.twiny()
-
-.. plot::
-    :context:
-    :include-source:
-
 
     # Plot velocity and density
     lines = [None] * 3
@@ -81,7 +66,7 @@ function for visualization purposes.
 We can visualize the same data in a 3D plot:
 
 .. plot::
-    :context:
+    :context: close-figs
     :include-source:
 
     from matplotlib.cm import ScalarMappable
@@ -92,7 +77,6 @@ We can visualize the same data in a 3D plot:
     zlims = [depths.min(), depths.max()]
 
     # Plot red "velocity pole"
-    plt.clf()
     fig = plt.gcf()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
     ax.plot(xs=[0, 0], ys=[0, 0], zs=zlims,
@@ -136,7 +120,7 @@ After running *effluent*, the contents of the output file ``out.csv`` is
 We plot the centerline of the plume in a 3D plot
 
 .. plot::
-    :context:
+    :context: close-figs
     :include-source:
 
     # Load output data
@@ -148,7 +132,6 @@ We plot the centerline of the plume in a 3D plot
 
     # Plot stop position
     fig = plt.gcf()
-    fig.clf()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
     ax.plot(xs=[x[-1]] * 2, ys=[y[-1]] * 2, zs=-z[[0, -1]],
             color='r', linestyle='--', linewidth=4, zorder=-1)

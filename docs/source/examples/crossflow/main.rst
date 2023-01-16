@@ -2,14 +2,6 @@
 Horizontal jet in crossflow
 =======================================
 
-.. plot::
-    :context:
-
-    plt.clf()
-    plt.close('all')
-
-|
-
 A horizontal jet is released into a current, which is in the direction normal
 to the pipe outlet. The ambient current velocity is zero initially, but
 increases to 0.1 m/s after one hour.
@@ -31,7 +23,7 @@ cross-section of the plume at two points in time: Both initially (when the
 ambient is stagnant) and after one hour (when there is an ambient current).
 
 .. plot::
-    :context:
+    :context: reset
     :include-source:
 
     import matplotlib.pyplot as plt

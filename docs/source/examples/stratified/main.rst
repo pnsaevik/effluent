@@ -2,14 +2,6 @@
 Buoyant jet in stratified ambient
 =======================================
 
-.. plot::
-    :context:
-
-    plt.clf()
-    plt.close('all')
-
-|
-
 In this example, a horizontal freshwater jet is released into a stratified
 water column. The ``config.toml`` file looks like this:
 
@@ -28,7 +20,7 @@ We plot the centerline and plume boundary using
 `matplotlib <https://matplotlib.org/>`_
 
 .. plot::
-    :context:
+    :context: reset
     :include-source:
 
     import matplotlib.pyplot as plt
