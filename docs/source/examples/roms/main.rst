@@ -120,13 +120,6 @@ b
     )
     fig.tight_layout()
 
-a
-
-.. plot::
-    :context:
-
-    plt.show()
-
 
 After running *effluent*, the contents of the output file ``out.csv`` is
 
