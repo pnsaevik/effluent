@@ -20,7 +20,7 @@ salt = [[0, 34]]
 # Output options
 [output]
 csv.file = "out.csv"
-csv.float_format = "%.6g"
+csv.float_format = "%.4f"
 trajectory.step = 5           # Time between trajectory points [s]
 trajectory.stop = 100          # Time of final trajectory point [s]
 release.start = 1970-01-01    # Time of first release [date]
