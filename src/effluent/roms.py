@@ -47,17 +47,20 @@ def open_dataset(file, z_rho=False, dens=False):
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
 
-    dset = xr.open_mfdataset(
-        paths=fnames,
-        chunks={'ocean_time': 1},
-        concat_dim='ocean_time',
-        compat='override',
-        data_vars='minimal',
-        coords='minimal',
-        combine='nested',
-        join='override',
-        combine_attrs='override',
-    )
+    if len(fnames) == 1:
+        dset = xr.open_dataset(fnames[0])
+    else:
+        dset = xr.open_mfdataset(
+            paths=fnames,
+            chunks={'ocean_time': 1},
+            concat_dim='ocean_time',
+            compat='override',
+            data_vars='minimal',
+            coords='minimal',
+            combine='nested',
+            join='override',
+            combine_attrs='override',
+        )
 
     if z_rho or dens:
         dset = add_zrho(dset)
