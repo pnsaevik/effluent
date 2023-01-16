@@ -79,7 +79,7 @@ We can visualize the same data in a 3D plot:
     zlims = [depths.min(), depths.max()]
 
     # Plot red "velocity pole"
-    fig = plt.gcf()
+    fig = plt.figure()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
     ax.plot(xs=[0, 0], ys=[0, 0], zs=zlims,
             color='r', linewidth=4, zorder=100)
@@ -111,6 +111,7 @@ We can visualize the same data in a 3D plot:
         location='left',
     )
     fig.tight_layout()
+    plt.show()
 
 
 After running *effluent*, the contents of the output file ``out.csv`` is
@@ -133,7 +134,7 @@ We plot the centerline of the plume in a 3D plot
     z = df.z.values
 
     # Plot stop position
-    fig = plt.gcf()
+    fig = plt.figure()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
     ax.plot(xs=[x[-1]] * 2, ys=[y[-1]] * 2, zs=-z[[0, -1]],
             color='r', linestyle='--', linewidth=4, zorder=-1)
@@ -153,4 +154,6 @@ We plot the centerline of the plume in a 3D plot
         f'Z: {-z[-1]: .3}',
         bbox=dict(color='w'),
     )
+
+    plt.show()
 |
