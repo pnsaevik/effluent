@@ -18,6 +18,7 @@ dens = [[1000]]
 # Output options
 [output]
 csv.file = "out.csv"
+csv.float_format = "%.6g"
 trajectory.step = 5           # Time between trajectory points [s]
 trajectory.stop = 30          # Time of final trajectory point [s]
 release.start = 1970-01-01    # Time of first release [date]
