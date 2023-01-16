@@ -55,8 +55,15 @@ function for visualization purposes.
         v = roms.v.values
 
     # Prepare plot
+    plt.clf()
     ax1 = plt.gcf().add_axes([0.1, 0.1, .8, .8])
+    ax1.plot([1, 2, 3], [4, 5, 6])
     ax2 = ax1.twiny()
+
+.. plot::
+    :context:
+    :include-source:
+
 
     # Plot velocity and density
     lines = [None] * 3
