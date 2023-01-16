@@ -5,6 +5,7 @@ Inclined heavy jet
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

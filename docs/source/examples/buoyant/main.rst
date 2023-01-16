@@ -5,6 +5,7 @@ Buoyant jet in stagnant ambient
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

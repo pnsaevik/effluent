@@ -5,6 +5,7 @@ Horizontal jet in coflow
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

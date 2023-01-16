@@ -5,6 +5,7 @@ Pure horizontal jet
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

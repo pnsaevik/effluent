@@ -5,6 +5,7 @@ Reading ambient data from ROMS
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

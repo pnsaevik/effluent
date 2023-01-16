@@ -5,6 +5,7 @@ Buoyant jet in stratified ambient
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |

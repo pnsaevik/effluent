@@ -5,6 +5,7 @@ Horizontal jet in crossflow
 .. plot::
     :context:
 
+    plt.clf()
     plt.close('all')
 
 |
