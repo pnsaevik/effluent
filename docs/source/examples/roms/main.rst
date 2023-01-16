@@ -68,11 +68,8 @@ We can visualize the same data in a 3D plot:
 
 .. plot::
     :context: close-figs
-    :include-source:
 
     plt.show()
-
-b
 
 .. plot::
     :context: close-figs
@@ -162,5 +159,5 @@ We plot the centerline of the plume in a 3D plot
         bbox=dict(color='w'),
     )
 
-    plt.show()
+    fig.tight_layout()
 |
