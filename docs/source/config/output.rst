@@ -113,6 +113,16 @@ can be used to limit the number of variables written.
 
 |
 
+.. confval:: output.csv.float_format
+
+    :type: string
+    :default: "%.10g"
+
+    Format and precision of floats written to file. Passed directly to
+    `pandas.DataFrame.to_csv <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html>`_.
+
+|
+
 .. confval:: output.nc.file
 
     :type: string

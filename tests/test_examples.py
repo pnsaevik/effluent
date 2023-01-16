@@ -2,9 +2,10 @@ import pytest
 import effluent
 from pathlib import Path
 import os
+import tomli
 
 
-EXAMPLE_DIR = Path(__file__).parent / "examples"
+EXAMPLE_DIR = Path(__file__).parent.parent / "docs/source/examples"
 NAMED_EXAMPLES = [f.name for f in EXAMPLE_DIR.glob('*') if f.is_dir()]
 
 
@@ -14,13 +15,23 @@ class Example:
         self.path = EXAMPLE_DIR / name
 
     def run(self):
+        # Load and modify config file
         os.chdir(self.path)
         conf_fname = self.path / 'config.toml'
-        result_fname = Path(effluent.run(conf_fname))
-        expected_fname = self.path / ('expected' + result_fname.suffix)
-        if not expected_fname.exists():
+        with open(conf_fname, 'br') as fp:
+            conf = tomli.load(fp)
+        expected_fname = conf['output']['csv']['file']
+        result_fname = 'result.csv'
+        conf['output']['csv']['file'] = result_fname
+
+        # Run simulation
+        effluent.run(conf)
+
+        # For convenience: If "expected" file is nonexistent, create it
+        if not Path(expected_fname).exists():
             import shutil
             shutil.copyfile(result_fname, expected_fname)
+
         return result_fname, expected_fname
 
 
@@ -54,4 +65,4 @@ class Test_run:
         ex = Example(name)
         result, expected = ex.run()
         compare_files(result, expected)
-        result.unlink()
+        Path(result).unlink()

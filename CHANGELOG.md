@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [unreleased] - 2022-11-29
 ### Added
 - Ambient input from ROMS ocean model
+- Examples on how to use the software
+- Adjustable float format in output CSV files
 
 ### Changed
 - Use proper dates in input/output instead of seconds since simulation start
