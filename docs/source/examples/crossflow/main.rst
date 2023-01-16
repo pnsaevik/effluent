@@ -28,6 +28,7 @@ ambient is stagnant) and after one hour (when there is an ambient current).
 
     import matplotlib.pyplot as plt
     import pandas as pd
+    import numpy as np
 
     df_all = pd.read_csv("out.csv").groupby('release_time')
     dates = ['1970-01-01 01:00:00', '1970-01-01 02:00:00']

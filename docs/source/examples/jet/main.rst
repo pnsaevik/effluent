@@ -79,6 +79,8 @@ area. Here is one way of visualizing the concentration evolution:
     :context: close-figs
     :include-source:
 
+    import numpy as np
+
     # Extract data
     x = df.x.values
     z = df.z.values
@@ -115,8 +117,6 @@ radius equals the gaussian radius times the square root of two.
 .. plot::
     :context: close-figs
     :include-source:
-
-    import numpy as np
 
     # Plot fuzzy plume
     depth = df.z.values[0]

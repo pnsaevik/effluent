@@ -29,6 +29,7 @@ function for visualization purposes.
     :include-source:
 
     import effluent.roms
+    import matplotlib.pyplot as plt
 
     # Use built-in function to interpolate ROMS data
     roms_spec = effluent.roms.open_location(
@@ -71,6 +72,7 @@ We can visualize the same data in a 3D plot:
 
     from matplotlib.cm import ScalarMappable
     from matplotlib.colors import Normalize
+    import numpy as np
 
     xlims = [u.min(), u.max()]
     ylims = [v.min(), v.max()]
