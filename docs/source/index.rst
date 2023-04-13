@@ -17,7 +17,7 @@ Lee, Joseph H. W., and Chu, Vincent H. (2003):
 `Turbulent Jets and Plumes - A Lagrangian Approach <https://doi.org/10.1007/978-1-4615-0407-8>`_.
 
 The package is mainly intended for research purposes, and does not contain
-any convenience plotting or statistics functionality. It is expected that
+plotting or statistics functionality. It is expected that
 these analyses are conducted in post-processing stages using other packages.
 
 

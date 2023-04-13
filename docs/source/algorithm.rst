@@ -13,9 +13,69 @@ with the flow. The boundaries of the element are constructed so that
 2.  The flux of tracer mass through the lateral boundary of the
     element is zero (the element expands with the jet).
 
-We also assume that there is no net torque acting on the element, and that the
-ambient flow is homogeneous at the boundaries of the element. The element will
-therefore never rotate.
+We also assume that the element is always oriented in the general direction
+of the jet.
+
+Nomenclature
+==================
+
+The table below contains symbols that are used on the page. Fluid properties
+describe average values within the computational element, unless otherwise
+specified.
+
+===================  =================================================================
+Variable             Description
+===================  =================================================================
+:math:`\beta_n`      Normal entrainment rate coefficient, :confval:`model.beta_n`
+:math:`\beta_t`      Tangential entrainment rate coefficient, :confval:`model.beta_t`
+:math:`\rho`         Mass density
+:math:`\rho_a`       Ambient mass density
+:math:`K`            Added mass coefficient
+:math:`k_n`          Normal added mass coefficient, :confval:`model.mass_n`
+:math:`k_t`          Tangential added mass coefficient, :confval:`model.mass_t`
+:math:`R`            Radius of the computational element
+:math:`\mathbf u`    Three-dimensional vector-valued velocity
+:math:`u`            Velocity in the :math:`x` direction
+:math:`\mathbf u_a`  Three-dimensional vector-valued ambient velocity
+:math:`u_a`          Ambient current velocity in the :math:`x` direction
+:math:`\Delta u_n`   Velocity difference, normal (across-jet) direction
+:math:`\Delta u_t`   Velocity difference, tangential (along-jet) direction
+:math:`V`            Volume of computational element
+:math:`v`            Velocity in the :math:`y` direction
+:math:`v_a`          Ambient current velocity in the :math:`y` direction
+:math:`w`            Velocity in the :math:`z` direction
+:math:`\mathbf x`    Three-dimensional vector-valued centerline position of jet
+:math:`x`            Horizontal distance from outlet, in the direction parallel to
+                     the pipe
+:math:`y`            Horizontal distance from outlet, in the direction directly to
+                     the right
+:math:`z`            Depth below sea surface
+===================  =================================================================
+
+
+Coordinate system
+=======================
+
+We choose a coordinate system that is aligned with the outflow pipe. The
+:math:`x` variable is the horizontal distance from the outlet in the direction
+*parallel* to the pipe. The :math:`y` variable is the horizontal distance from
+the outlet in the direction directly to the *right* of the pipe. Finally, the
+:math:`z` variable is the depth below sea surface. The jet velocities in each
+of these directions are :math:`u`, :math:`v` and :math:`w`, respectively.
+
+The jet centerline position is written in vector form as
+
+.. math ::
+    :label: xvec
+
+    \mathbf{x} = x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
+
+and the jet velocity is written in vector form as
+
+.. math ::
+    :label: uvec
+
+    \mathbf{u} = u\mathbf{i} + v\mathbf{j} + w\mathbf{k}.
 
 
 Cross-sectional profile
@@ -80,6 +140,9 @@ direction,
 
     \Delta u_n = \sqrt{(u - u_a)^2 + (v - v_a)^2 + w^2 - \Delta u_t^2}.
 
+In the above expressions, :math:`u_a` and :math:`v_a` are the ambient ocean
+current velocities in the :math:`u` and :math:`v` directions, respectively.
+
 Conservation of mass
 ====================
 
@@ -143,54 +206,28 @@ Conservation of volume
 =======================
 
 By continuity, the thickness of the computational element is
-proportional to the faceward velocity :math:`u`. The volume :math:`V` of the
+proportional to the faceward velocity. The volume :math:`V` of the
 element can therefore be expressed as
+
+.. math ::
+    :label: voldef_prim
+
+    V = \frac{s_0}{u_0} \pi R^2 \sqrt{u^2 + v^2 + w^2} ,
+
+where :math:`s_0` is the initial thickness and :math:`u_0` the initial
+velocity. By differentiation, we obtain the equivalent equation
 
 .. math ::
     :label: voldef
 
-    V = \frac{s_0}{u_0} u \pi R^2,
-
-where :math:`s_0` is the initial thickness and :math:`u_0` the initial
-velocity.
+    \frac{1}{V}\frac{dV}{dt} = 2 \frac{1}{R}\frac{dR}{dt} + \frac{u\frac{du}{dt} + v\frac{dv}{dt} + w\frac{dw}{dt}}{u^2 + v^2 + w^2} .
 
 Solving the equations
 ======================
 
-We choose the following as our primary variables:
-
-==============  =============================================================
-Variable        Description
-==============  =============================================================
-:math:`x`       Horizontal distance from outlet, in the direction parallel to
-                the pipe
-:math:`y`       Horizontal distance from outlet, in the direction directly to
-                the right
-:math:`z`       Depth below sea surface
-:math:`u`       Velocity in the :math:`x` direction
-:math:`v`       Velocity in the :math:`y` direction
-:math:`w`       Velocity in the :math:`z` direction
-:math:`\rho`     Mass density
-:math:`R`       Radius of the computational element
-==============  =============================================================
-
-The differential equations are reformulated in terms of the primary variables.
-Remaining variables are computed from the primary variables. Using the
-vector forms
-
-.. math ::
-    :label: xvec
-
-    \mathbf{x} = x\mathbf{i} + y\mathbf{j} + z\mathbf{k}
-
-and
-
-.. math ::
-    :label: uvec
-
-    \mathbf{u} = u\mathbf{i} + v\mathbf{j} + w\mathbf{k},
-
-we can write the primary equations as:
+We choose :math:`\mathbf x`, :math:`\mathbf u`, :math:`\rho` and :math:`R` as
+our primary variables. Rewriting the primary equations in terms of these
+variables, we obtain:
 
 Displacement
 ---------------
@@ -227,12 +264,12 @@ Jet expansion rate
 |
 
 In addition we utilize the following expression for the rate of volume change,
-which is derived from :eq:`masscons`, :eq:`momcons_u` and :eq:`voldef`:
+which is derived from :eq:`voldef` and :eq:`sol_mom`:
 
 .. math ::
     :label: sol_voldef
 
-    \frac{1}{V}\frac{dV}{dt} = \frac{1}{R}\frac{dR}{dt}\frac{2 \rho u}{\rho u + \rho_a (u - u_a)}
+    \frac{1}{V}\frac{dV}{dt}=\frac{\frac{2\rho}{R}\frac{dR}{dt}+K\left(\rho-\rho_{a}\right)\frac{gw}{u^{2}+v^{2}+w^{2}}}{\rho_{a}\left(1-\frac{u_{a}u+v_{a}v}{u^{2}+v^{2}+w^{2}}\right)+\rho}
 
 
 The equations are solved using
