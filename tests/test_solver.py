@@ -15,6 +15,10 @@ class Test_Solver_solve:
         return xr.Dataset(dict(depth=100, u=1, w=0, dens=990, diam=0.5))
 
     @pytest.fixture(scope='class')
+    def pipe_dset_light_fast(self):
+        return xr.Dataset(dict(depth=100, u=3, w=0, dens=990, diam=0.5))
+
+    @pytest.fixture(scope='class')
     def pipe_dset_decl(self):
         return xr.Dataset(dict(depth=100, u=1, w=1, dens=1000, diam=0.5))
 
@@ -93,9 +97,9 @@ class Test_Solver_solve:
         return s.solve()
 
     @pytest.fixture(scope='class')
-    def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
+    def result_light_stratified(self, pipe_dset_light_fast, ambient_dset_stratified):
         s = solver.Solver.from_config(dict(step=20, stop=200))
-        s.data = (pipe_dset_light, ambient_dset_stratified)
+        s.data = (pipe_dset_light_fast, ambient_dset_stratified)
         return s.solve()
 
     @staticmethod

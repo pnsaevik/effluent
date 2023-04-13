@@ -53,8 +53,60 @@ class Solver:
 
         return s
 
+    def volume_change_ratio(self, t, y):
+        # Rename input variables
+        # noinspection PyUnusedLocal
+        t = t
+        y_in = y
+        x, y, z, u, v, w, rho, R = y_in
+
+        # Define coefficients
+        beta_t = self.beta_t          # Entrainment coefficient, co-flow
+        beta_n = self.beta_n          # Entrainment coefficient, cross-flow
+        K_t = 1 / (1 + self.mass_t)   # Added mass coefficient, tangential gravity pull
+        K_n = 1 / (1 + self.mass_n)   # Added mass coefficient, normal gravity pull
+        g = 9.81                      # Acceleration of gravity
+
+        # Extract ambient velocity and density
+        ambient = self.ambient_data(z)
+        u_a = ambient.u.values
+        v_a = ambient.v.values
+        rho_a = ambient.dens.values
+
+        # Compute added mass coefficient
+        squared_horizontal_speed = u*u + v*v
+        w2 = w*w
+        squared_speed = squared_horizontal_speed + w2
+        K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
+
+        # Compute flow difference in tangential and normal direction
+        delta_u = u - u_a
+        delta_v = v - v_a
+        squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
+        speed = np.sqrt(squared_speed)
+        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
+        delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
+
+        # Jet expansion rate (entrainment rate)
+        ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
+
+        # Conservation of volume
+        ddt_log_R2 = 2 * ddt_R / R
+        rho_ratio = rho_a / rho
+        gravity_factor = K * (1 - rho_ratio) * g
+        nominator = ddt_log_R2 + gravity_factor * w / squared_speed
+        denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
+        ddt_log_V = nominator / denominator
+
+        return ddt_log_V
+
     def solve(self):
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
+
+        event = lambda t, y: self.volume_change_ratio(t, y)
+        event.terminal = True
+        event.direction = -1
 
         result = solve_ivp(
             fun=self.odefunc,
@@ -67,10 +119,16 @@ class Solver:
             atol=self.atol,
             first_step=self.first_step or None,
             max_step=self.max_step or np.inf,
+            events=event,
         )
 
         # noinspection PyUnresolvedReferences
-        res_t, res_y = result.t, result.y
+        res_t, res_y, evt_t, evt_y = result.t, result.y, result.t_events, result.y_events
+
+        # Append the end result, if integration was stopped
+        if len(evt_t[0]) > 0:
+            res_t = np.concatenate([res_t, evt_t[0]])
+            res_y = np.concatenate([res_y, evt_y[0].T], axis=1)
 
         # Organize result
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
@@ -120,6 +178,7 @@ class Solver:
         beta_n = self.beta_n          # Entrainment coefficient, cross-flow
         K_t = 1 / (1 + self.mass_t)   # Added mass coefficient, tangential gravity pull
         K_n = 1 / (1 + self.mass_n)   # Added mass coefficient, normal gravity pull
+        g = 9.81                      # Acceleration of gravity
 
         # Extract ambient velocity and density
         ambient = self.ambient_data(z)
@@ -153,7 +212,10 @@ class Solver:
         # Conservation of volume
         ddt_log_R2 = 2 * ddt_R / R
         rho_ratio = rho_a / rho
-        ddt_log_V = ddt_log_R2 * u / (u + rho_ratio * delta_u)
+        gravity_factor = K * (1 - rho_ratio) * g
+        nominator = ddt_log_R2 + gravity_factor * w / squared_speed
+        denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
+        ddt_log_V = nominator / denominator
 
         # Conservation of mass
         ddt_rho = ddt_log_V * (rho_a - rho)
@@ -162,7 +224,7 @@ class Solver:
         prefix = -ddt_log_V * rho_ratio
         ddt_u = prefix * delta_u
         ddt_v = prefix * delta_v
-        ddt_w = prefix * w + K * (1 - rho_ratio) * 9.81
+        ddt_w = prefix * w + gravity_factor
 
         ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_rho, ddt_R])
         return ddt_y

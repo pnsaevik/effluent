@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Bug which caused command line invokation to fail unconditionally
 - Correct computation of pipe flow speed from flow rate
+- Computational elements are now oriented in the jet direction
 
 
 ## [1.1] - 2022-11-29
