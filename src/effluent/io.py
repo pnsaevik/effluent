@@ -266,7 +266,7 @@ class OutputCSV(Output):
         # Append result to file, write headers only if blank file
         df.to_csv(
             self.dset,
-            line_terminator='\n',
+            lineterminator='\n',
             header=self._blank_file,
             float_format=self.float_format,
             index=False,
