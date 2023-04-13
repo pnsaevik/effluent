@@ -207,20 +207,28 @@ Conservation of volume
 
 By continuity, the thickness of the computational element is
 proportional to the faceward velocity. The volume :math:`V` of the
-element can therefore be expressed as
+element is therefore given by
 
 .. math ::
     :label: voldef_prim
 
-    V = \frac{s_0}{u_0} \pi R^2 \sqrt{u^2 + v^2 + w^2} ,
+    \frac{V}{V_0} = \frac{R^2}{R_0^2} \frac{\sqrt{u^2 + v^2 + w^2}}{u_0} ,
 
-where :math:`s_0` is the initial thickness and :math:`u_0` the initial
-velocity. By differentiation, we obtain the equivalent equation
+where :math:`V_0`, :math:`R_0` and :math:`u_0` are the initial
+volume, radius and velocity, respectively. The expression above also represents
+the dilution rato of any substance transported by the jet.
+
+By differentiation, we obtain the equivalent equation
 
 .. math ::
     :label: voldef
 
     \frac{1}{V}\frac{dV}{dt} = 2 \frac{1}{R}\frac{dR}{dt} + \frac{u\frac{du}{dt} + v\frac{dv}{dt} + w\frac{dw}{dt}}{u^2 + v^2 + w^2} .
+
+The volume of the element should always increase. If the expression above is
+negative, the jet has slowed down so much that our entrainment rate assumption
+is no longer valid. In other words, we have then reached the far-field
+dispersion regime. Integration is stopped whenever this happens.
 
 Solving the equations
 ======================
