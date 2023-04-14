@@ -25,20 +25,28 @@ We plot the centerline and plume boundary using
 
     import matplotlib.pyplot as plt
     import pandas as pd
+    import numpy as np
 
     df = pd.read_csv("out.csv")
 
-    x = df.x.values
-    center = -df.z.values
-    upper = -df.z.values + df.radius.values
-    lower = -df.z.values - df.radius.values
+    # Define unit tangent vector
+    xz = np.stack([df.x.values, -df.z.values])
+    t = np.roll(xz, shift=-1) - np.roll(xz, shift=1)
+    t[:, 0] = xz[:, 1] - xz[:, 0]
+    t[:, -1] = xz[:, -1] - xz[:, -2]
+    t = t / np.sqrt(np.sum(t**2, axis=0))
 
-    plt.plot(x, center, color='k', linewidth=2, label='Centerline')
-    plt.plot(x, upper, color='k', linewidth=.5)
-    plt.plot(x, lower, color='k', linewidth=.5)
-    plt.fill_between(x, lower, upper, color="#e0e0e0",
-                     label='Plume extent')
+    # Define plume boundaries
+    x1 = df.x.values - df.radius.values * t[1, :]
+    x2 = df.x.values + df.radius.values * t[1, :]
+    z1 = -df.z.values + df.radius.values * t[0, :]
+    z2 = -df.z.values - df.radius.values * t[0, :]
+    x = np.concatenate([x1, np.flip(x2)])
+    z = np.concatenate([z1, np.flip(z2)])
 
+    plt.plot(xz[0], xz[1], color='k', linewidth=2, label='Centerline')
+    plt.fill(x, z, edgecolor='k', linewidth=.5, facecolor="#e0e0e0",
+             label='Plume extent')
     plt.xlabel('Distance from pipe outlet (m)')
     plt.ylabel('Depth below surface (m)')
     plt.gca().set_aspect('equal')
