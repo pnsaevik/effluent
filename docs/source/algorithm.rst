@@ -212,10 +212,9 @@ element is therefore given by
 .. math ::
     :label: voldef_prim
 
-    \frac{V}{V_0} = \frac{R^2}{R_0^2} \frac{\sqrt{u^2 + v^2 + w^2}}{u_0} ,
+    \frac{V}{V_0} = \frac{R^2}{R_0^2} \sqrt{\frac{u^2 + v^2 + w^2}{u_0^2 + v_0^2 + w_0^2}} ,
 
-where :math:`V_0`, :math:`R_0` and :math:`u_0` are the initial
-volume, radius and velocity, respectively. The expression above also represents
+where the subscript 0 denotes initial values (:math:`v_0 = 0` by definition). The expression above also represents
 the dilution rato of any substance transported by the jet.
 
 By differentiation, we obtain the equivalent equation
