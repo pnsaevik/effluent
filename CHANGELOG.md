@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-[unreleased] - 2022-11-29
+[1.2] - 2022-11-29
 ### Added
 - Ambient input from ROMS ocean model
 - Examples on how to use the software
@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug which caused command line invokation to fail unconditionally
 - Correct computation of pipe flow speed from flow rate
 - Computational elements are now oriented in the jet direction
-- Line terminator bug
 
 
 ## [1.1] - 2022-11-29
