@@ -35,6 +35,7 @@ class Pipe:
             skipinitialspace=True,
             skip_blank_lines=True,
             comment='#',
+            converters=dict(time=np.datetime64),
         )
 
         return Pipe.from_dataframe(df)
