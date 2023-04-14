@@ -44,13 +44,14 @@ We plot the centerline and plume boundary using
     x = np.concatenate([x1, np.flip(x2)])
     z = np.concatenate([z1, np.flip(z2)])
 
+    # Generate figure
     plt.plot(xz[0], xz[1], color='k', linewidth=2, label='Centerline')
     plt.fill(x, z, edgecolor='k', linewidth=.5, facecolor="#e0e0e0",
              label='Plume extent')
     plt.xlabel('Distance from pipe outlet (m)')
     plt.ylabel('Depth below surface (m)')
     plt.gca().set_aspect('equal')
-    plt.legend()
+    plt.legend(loc='upper left')
     plt.tight_layout()
 
 |
