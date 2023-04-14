@@ -202,6 +202,8 @@ acceleration. The term depends on the inclination angle of the jet,
 where :math:`k_n` is determined by :confval:`model.mass_n`
 and :math:`k_t` is determined by :confval:`model.mass_t`.
 
+.. _conservation-of-volume:
+
 Conservation of volume
 =======================
 
