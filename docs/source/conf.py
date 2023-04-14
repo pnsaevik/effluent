@@ -60,6 +60,7 @@ release = getversion()
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 nitpicky = True
@@ -68,10 +69,10 @@ html_css_files = [
 ]
 
 # Matplotlib extension options
-plot_include_source = True
 plot_html_show_source_link = False
 plot_formats = ['png']
 plot_html_show_formats = False
+plot_pre_code = ""
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -15,6 +15,10 @@ class Test_Solver_solve:
         return xr.Dataset(dict(depth=100, u=1, w=0, dens=990, diam=0.5))
 
     @pytest.fixture(scope='class')
+    def pipe_dset_light_fast(self):
+        return xr.Dataset(dict(depth=100, u=3, w=0, dens=990, diam=0.5))
+
+    @pytest.fixture(scope='class')
     def pipe_dset_decl(self):
         return xr.Dataset(dict(depth=100, u=1, w=1, dens=1000, diam=0.5))
 
@@ -64,38 +68,38 @@ class Test_Solver_solve:
 
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
-        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
+        s = solver.Solver.from_config(dict(step=10, stop=20))
         s.data = (pipe_dset_horz, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
-        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
+        s = solver.Solver.from_config(dict(step=10, stop=20))
         s.data = (pipe_dset_decl, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
-        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
+        s = solver.Solver.from_config(dict(step=10, stop=20))
         s.data = (pipe_dset_horz, ambient_dset_cross)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
-        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
+        s = solver.Solver.from_config(dict(step=10, stop=20))
         s.data = (pipe_dset_horz, ambient_dset_coflow)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
-        s = solver.Solver.from_config(dict(resolution=10, stagnation=20))
+        s = solver.Solver.from_config(dict(step=10, stop=20))
         s.data = (pipe_dset_light, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
-    def result_light_stratified(self, pipe_dset_light, ambient_dset_stratified):
-        s = solver.Solver.from_config(dict(resolution=20, stagnation=200))
-        s.data = (pipe_dset_light, ambient_dset_stratified)
+    def result_light_stratified(self, pipe_dset_light_fast, ambient_dset_stratified):
+        s = solver.Solver.from_config(dict(step=20, stop=200))
+        s.data = (pipe_dset_light_fast, ambient_dset_stratified)
         return s.solve()
 
     @staticmethod
@@ -185,7 +189,7 @@ class Test_Solver_from_config:
     def test_sets_internal_parameters(self):
         conf = dict(
             beta_n=1, beta_t=2, mass_n=3, mass_t=4, method=5, rtol=6, atol=7,
-            first_step=8, max_step=9, resolution=10, stagnation=11,
+            first_step=8, max_step=9, start=10, stop=11, step=12,
         )
         s = solver.Solver.from_config(conf)
         for k, v in conf.items():

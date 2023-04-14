@@ -94,37 +94,65 @@ class Test_append_xr_to_nc:
 
 class Test_Pipe_from_config:
     def test_explicit_mapping_with_arrays(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200], flow=[2, 3], dens=[4, 5], diam=[6, 7], depth=[8, 9],
-            decline=[10, 11],
+            time=time.astype(object), flow=[2, 3], dens=[4, 5], diam=[6, 7],
+            depth=[8, 9], decline=[10, 11],
         )
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4.5
 
     def test_explicit_mapping_with_singlenums(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200], flow=[2, 3], dens=4, diam=6, depth=[8, 9],
+            time=time.astype(object), flow=[2, 3], dens=4, diam=6, depth=[8, 9],
             decline=10,
         )
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 4
+
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object), flow=[2, 3], diam=[6, 7],
+            depth=[8, 9], decline=[10, 11], salt=[30, 32], temp=[4, 5],
+        )
+        p = effluent.io.Pipe.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1024 < dset.dens.values.item() < 1025
+
+    def test_can_have_single_time_entry(self):
+        posix = np.array([0])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object), flow=[2], dens=[4], diam=[6], depth=[8],
+            decline=[10],
+        )
+        p = effluent.io.Pipe.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert dset.dens.values.item() == 4
 
     def test_csv_file(self):
         buf = io.StringIO("""
-            time, flow, dens, diam, depth, decline
-               0,    1,    3,    5,     7,       9
-            1200,    2,    4,    6,     8,      10
+                        time, flow, dens, diam, depth, decline
+            1970-01-01 00:00,    1,    3,    5,     7,       9
+            1970-01-01 00:20,    2,    4,    6,     8,      10
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 3.5
 
     def test_nc_file(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = xr.Dataset(
-            coords=dict(time=[0, 1200]),
+            coords=dict(time=time),
             data_vars=dict(
                 flow=xr.Variable('time', [1, 2]),
                 dens=xr.Variable('time', [3, 4]),
@@ -135,53 +163,91 @@ class Test_Pipe_from_config:
         ).to_netcdf()
         conf = dict(nc=dict(file=buf))
         p = effluent.io.Pipe.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values == 3.5
 
 
 class Test_Ambient_from_config:
     def test_explicit_mapping_with_arrays(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200],
+            time=time.astype(object),
             depth=[0, 10, 20],
             coflow=[[0, 1, 2], [3, 4, 5]],
             crossflow=[[6, 7, 8], [9, 0, 1]],
             dens=[[2, 3, 4], [5, 6, 7]],
         )
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
-    def test_explicit_mapping_with_singlenums(self):
+    def test_can_have_single_time_entry(self):
+        posix = np.array([0])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         conf = dict(
-            time=[0, 1200],
+            time=time.astype(object),
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2]],
+            crossflow=[[6, 7, 8]],
+            dens=[[2, 3, 4]],
+        )
+        p = effluent.io.Ambient.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert dset.dens.values.tolist() == [2, 3, 4]
+
+    def test_explicit_mapping_with_singlenums(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object),
             depth=[0, 10, 20],
             coflow=[[0, 1, 2], [3, 4, 5]],
             crossflow=[[6, 7, 8], [9, 0, 1]],
             dens=3,
         )
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3, 3, 3]
+
+    def test_can_convert_salt_and_temp_to_dens(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
+        conf = dict(
+            time=time.astype(object),
+            depth=[0, 10, 20],
+            coflow=[[0, 1, 2], [3, 4, 5]],
+            crossflow=[[6, 7, 8], [9, 0, 1]],
+            temp=[[2, 3, 4], [5, 6, 7]],
+            salt=[[22, 23, 24], [25, 26, 27]],
+        )
+        p = effluent.io.Ambient.from_config(conf)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
+        assert 1019 < dset.dens.values.mean() < 1020
 
     def test_csv_file(self):
         buf = io.StringIO("""
-            time, depth, coflow, crossflow, dens
-               0,     0,      0,         6,    2
-               0,    10,      1,         7,    3
-               0,    20,      2,         8,    4
-            1200,     0,      3,         9,    5
-            1200,    10,      4,         0,    6
-            1200,    20,      5,         1,    7
+                        time, depth, coflow, crossflow, dens
+            1970-01-01 00:00,     0,      0,         6,    2
+            1970-01-01 00:00,    10,      1,         7,    3
+            1970-01-01 00:00,    20,      2,         8,    4
+            1970-01-01 00:20,     0,      3,         9,    5
+            1970-01-01 00:20,    10,      4,         0,    6
+            1970-01-01 00:20,    20,      5,         1,    7
         """)
         conf = dict(csv=dict(file=buf))
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
 
     def test_nc_file(self):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = xr.Dataset(
-            coords=dict(time=[0, 1200], depth=[0, 10, 20]),
+            coords=dict(
+                time=time,
+                depth=[0, 10, 20],
+            ),
             data_vars=dict(
                 coflow=xr.Variable(('time', 'depth'), [[0, 1, 2], [3, 4, 5]]),
                 crossflow=xr.Variable(('time', 'depth'), [[6, 7, 8], [9, 0, 1]]),
@@ -190,8 +256,18 @@ class Test_Ambient_from_config:
         ).to_netcdf()
         conf = dict(nc=dict(file=buf))
         p = effluent.io.Ambient.from_config(conf)
-        dset = p.select(time=600)
+        dset = p.select(time=np.datetime64('1970-01-01 00:10'))
         assert dset.dens.values.tolist() == [3.5, 4.5, 5.5]
+
+    def test_roms_file(self):
+        from pathlib import Path
+        FORCING_glob = str(Path(__file__).parent.joinpath('forcing_?.nc'))
+
+        conf = dict(roms=dict(file=FORCING_glob, latitude=59.03, longitude=5.68, azimuth=0))
+        with effluent.io.Ambient.from_config(conf) as p:
+            dset = p.select(time=np.datetime64('2015-09-07T07'))
+            assert len(dset.depth) > 0
+            assert dset.dens.dims == ('depth', )
 
 
 class Test_Output_from_config:

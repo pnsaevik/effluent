@@ -3,52 +3,14 @@ import abc
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-import tomli as toml
 import xarray as xr
-
-
-def load_config(fname_or_dict):
-    """Load and parse input config, and convert to internal config format"""
-
-    if isinstance(fname_or_dict, dict):
-        input_conf = fname_or_dict
-    else:
-        with open(fname_or_dict, 'rb') as fp:
-            input_conf = toml.load(fp)
-
-    # noinspection PyDictCreation
-    conf = {}
-    conf['pipe'] = input_conf['pipe']
-    conf['ambient'] = input_conf['ambient']
-    conf['output'] = input_conf['output']
-
-    # --- Solver ---
-
-    conf['solver'] = {}
-    # Copy a selection of output parameters
-    for k in ['stagnation', 'resolution']:
-        conf['solver'][k] = input_conf['output'][k]
-    # Copy model parameters
-    for k, v in input_conf.get('model', {}).items():
-        conf['solver'][k] = v
-    # Copy solver parameters
-    for k, v in input_conf.get('solver', {}).items():
-        conf['solver'][k] = v
-
-    # --- Time stepper ---
-
-    conf['timestepper'] = {}
-    conf['timestepper']['frequency'] = input_conf['output']['frequency']
-    conf['timestepper']['stop'] = input_conf['output']['stop']
-
-    return conf
 
 
 class Pipe:
     def __init__(self, dset):
         self._dset = dset
-        self._time_min = dset.time[0].values.item()
-        self._time_max = dset.time[-1].values.item()
+        self._time_min = dset.time[0].values
+        self._time_max = dset.time[-1].values
 
     @staticmethod
     def from_config(conf):
@@ -66,55 +28,79 @@ class Pipe:
 
     @staticmethod
     def from_csv_file(file):
-        df = pd.read_csv(
-            file,
-            sep=',',
-            index_col='time',
-            header=0,
-            skipinitialspace=True,
-            skip_blank_lines=True,
-            comment='#',
-        )
+        df = read_csv(file)
         return Pipe.from_dataframe(df)
 
     @staticmethod
-    def _compute_uw(flow, decline):
+    def _compute_uw(flow, decline, diam):
+        area = np.pi * diam * diam * 0.25
+        speed = flow / area
         theta = decline * np.pi / 180
-        u = flow * np.cos(theta)
-        w = flow * np.sin(theta)
+        u = speed * np.cos(theta)
+        w = speed * np.sin(theta)
         return u, w
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
     @staticmethod
     def from_dataset(dset):
-        time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
-        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values)
+        u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in dset:
+            from . import eos
+            dens = eos.roms_rho(
+                temp=dset['temp'].values,
+                salt=dset['salt'].values,
+                depth=dset['depth'].values,
+            )
+            dset = dset.assign(dens=xr.Variable(dset['temp'].dims, dens))
         return Pipe(dset)
 
     @staticmethod
-    def from_mapping(time, flow, dens, decline, diam, depth):
-        index = pd.Index(data=time, name='time')
-        data = dict(flow=flow, dens=dens, diam=diam, depth=depth, decline=decline)
-        df = pd.DataFrame(data, index=index)
+    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+        data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
+        if salt is not None:
+            data['salt'] = salt
+        if temp is not None:
+            data['temp'] = temp
+        if dens is not None:
+            data['dens'] = dens
+        df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._time_min, self._time_max)
         return self._dset.interp(time=clipped_time)
 
 
+def read_csv(file):
+    return pd.read_csv(
+        file,
+        sep=',',
+        header=0,
+        skipinitialspace=True,
+        skip_blank_lines=True,
+        comment='#',
+        converters=dict(time=np.datetime64),
+    )
+
+
 class Ambient:
-    def __init__(self, dset):
-        self._dset = dset
-        self._tmin = dset.time[0].values.item()
-        self._tmax = dset.time[-1].values.item()
+    @abc.abstractmethod
+    def select(self, time):
+        return NotImplementedError
 
     @staticmethod
     def from_config(conf):
@@ -122,6 +108,8 @@ class Ambient:
             return Ambient.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
             return Ambient.from_nc_file(**conf['nc'])
+        elif 'roms' in conf:
+            return AmbientRoms(**conf['roms'])
         else:
             return Ambient.from_mapping(**conf)
 
@@ -132,6 +120,9 @@ class Ambient:
 
     @staticmethod
     def from_dataframe(df):
+        df['time'] = df['time'].values.astype('datetime64')
+        df = df.set_index(['time', 'depth'])
+
         dset = xr.Dataset.from_dataframe(df)
         return Ambient.from_dataset(dset)
 
@@ -139,40 +130,56 @@ class Ambient:
     def from_dataset(dset):
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
-        assert np.all(np.diff(time) > 0), "time values must be strictly increasing"
-        return Ambient(dset)
+        assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
+
+        # Compute density from temp and salt if not present
+        if 'dens' not in dset:
+            from . import eos
+            data = eos.roms_rho(
+                temp=dset['temp'].values,
+                salt=dset['salt'].values,
+                depth=dset['depth'].values,
+            )
+            dset = dset.assign(dens=xr.Variable(dset['temp'].dims, data))
+
+        return AmbientXarray(dset)
 
     @staticmethod
     def from_csv_file(file):
-        df = pd.read_csv(
-            file,
-            sep=',',
-            index_col=('time', 'depth'),
-            header=0,
-            skipinitialspace=True,
-            skip_blank_lines=True,
-            comment='#',
-        )
+        df = read_csv(file)
         return Ambient.from_dataframe(df)
 
     @staticmethod
-    def from_mapping(time, depth, coflow, crossflow, dens):
+    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
         shp = (len(time), len(depth))
-        u = np.broadcast_to(coflow, shp)
-        v = np.broadcast_to(crossflow, shp)
-        d = np.broadcast_to(dens, shp)
 
-        dset = xr.Dataset(
-            coords=dict(time=time, depth=depth),
-            data_vars=dict(
-                coflow=xr.Variable(('time', 'depth'), u),
-                crossflow=xr.Variable(('time', 'depth'), v),
-                dens=xr.Variable(('time', 'depth'), d),
-            ),
-        )
+        variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
+                         temp=temp)
+
+        dset = xr.Dataset(coords=dict(time=time, depth=depth))
+        for k, v in variables.items():
+            if v is None:
+                continue
+            data = np.broadcast_to(v, shp)
+            dset = dset.assign(**{k: xr.Variable(('time', 'depth'), data)})
+
         return Ambient.from_dataset(dset)
 
+    def close(self):
+        pass
+
+
+class AmbientXarray(Ambient):
+    def __init__(self, dset):
+        self._dset = dset
+        self._tmin = dset.time[0].values
+        self._tmax = dset.time[-1].values
+
     def select(self, time):
+        if self._dset.dims['time'] == 1:
+            # No interpolation is possible if there is only 1 time entry
+            return self._dset.isel(time=0)
+
         clipped_time = np.clip(time, self._tmin, self._tmax)
         return self._dset.interp(time=clipped_time)
 
@@ -191,10 +198,15 @@ class Output:
     def write(self, time, result):
         return NotImplementedError
 
+    def close(self):
+        pass
+
 
 class OutputCSV(Output):
-    def __init__(self, file, variables):
+    def __init__(self, file, variables, float_format, separator):
         self.variables = variables
+        self.float_format = float_format
+        self.separator = separator
         self._blank_file = True
 
         if isinstance(file, str):
@@ -210,13 +222,16 @@ class OutputCSV(Output):
             raise TypeError(f'Expected file name or stream, found "{type(file)}"')
 
     def __enter__(self):
-        if self.dset is None:
-            self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
-            self._blank_file = True
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    def open(self):
+        if self.dset is None:
+            self.dset = open(self.file, 'w', encoding='utf-8', newline='\n')
+            self._blank_file = True
 
     def close(self):
         if self.dset is not None:
@@ -227,11 +242,15 @@ class OutputCSV(Output):
     def from_config(conf):
         out = OutputCSV(
             file=conf['csv']['file'],
-            variables=conf.get('variables', None)
+            variables=conf.get('variables', None),
+            float_format=conf['csv'].get('float_format', '%.10g'),
+            separator=conf.get('separator', ','),
         )
         return out
 
     def write(self, time, result):
+        self.open()  # Lazy opening: Only effective if first time
+
         df = result.to_dataframe()
         df['release_time'] = time
         df = df.reset_index().set_index(['release_time', 't']).reset_index()
@@ -243,9 +262,9 @@ class OutputCSV(Output):
         # Append result to file, write headers only if blank file
         df.to_csv(
             self.dset,
-            line_terminator='\n',
+            lineterminator='\n',
             header=self._blank_file,
-            float_format='%.10g',
+            float_format=self.float_format,
             index=False,
         )
         self._blank_file = False
@@ -273,12 +292,16 @@ class OutputNC(Output):
             raise TypeError(f'Unknown file type: {type(file)}')
 
     def __enter__(self):
-        self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
-        self._blank_file = True
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    def open(self):
+        if self.dset is None:
+            self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
+            self._blank_file = True
 
     def close(self):
         if self.dset is not None:
@@ -297,6 +320,8 @@ class OutputNC(Output):
         return out
 
     def write(self, time, result):
+        self.open()  # Lazy opening: Only effective if first time
+
         result = result.assign_coords(release_time=time)
         result = result.expand_dims('release_time')
 
@@ -404,3 +429,54 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
         xr_var = xr_dset[name]
         nc_var = nc_dset.variables[name]
         nc_var[num_old_items:num_items] = xr_var.values
+
+
+class AmbientRoms(Ambient):
+    def __init__(self, file, latitude, longitude, azimuth):
+        self.file = file
+        self.latitude = latitude
+        self.longitude = longitude
+        self.azimuth = azimuth
+
+        self.dset = None
+        self._tmin = None
+        self._tmax = None
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    def open(self):
+        if self.dset is None:
+            import effluent.roms
+            dset = effluent.roms.open_location(
+                file=self.file,
+                latitude=self.latitude,
+                longitude=self.longitude,
+                azimuth=self.azimuth,
+            )
+
+            keep_vars = ['time', 'depth', 'u', 'v', 'dens']
+            drop_vars = [v for v in dset.variables if v not in keep_vars]
+            dset = dset.drop_vars(drop_vars)
+
+            self.dset = dset
+            self._tmin = dset.time[0].values
+            self._tmax = dset.time[-1].values
+
+    def close(self):
+        if self.dset is not None:
+            self.dset.close()
+            self.dset = None
+
+    def select(self, time):
+        self.open()
+
+        clipped_time = np.clip(time, self._tmin, self._tmax)
+        return self.dset.interp(time=clipped_time)
