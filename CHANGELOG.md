@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ambient input from ROMS ocean model
 - Examples on how to use the software
 - Adjustable float format in output CSV files
+- Support for pandas 2.0
 
 ### Changed
 - Use proper dates in input/output instead of seconds since simulation start
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug which caused command line invokation to fail unconditionally
 - Correct computation of pipe flow speed from flow rate
 - Computational elements are now oriented in the jet direction
+- Line terminator bug
 
 
 ## [1.1] - 2022-11-29

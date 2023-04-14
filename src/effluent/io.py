@@ -28,15 +28,7 @@ class Pipe:
 
     @staticmethod
     def from_csv_file(file):
-        df = pd.read_csv(
-            file,
-            sep=',',
-            header=0,
-            skipinitialspace=True,
-            skip_blank_lines=True,
-            comment='#',
-        )
-
+        df = read_csv(file)
         return Pipe.from_dataframe(df)
 
     @staticmethod
@@ -93,6 +85,18 @@ class Pipe:
         return self._dset.interp(time=clipped_time)
 
 
+def read_csv(file):
+    return pd.read_csv(
+        file,
+        sep=',',
+        header=0,
+        skipinitialspace=True,
+        skip_blank_lines=True,
+        comment='#',
+        converters=dict(time=np.datetime64),
+    )
+
+
 class Ambient:
     @abc.abstractmethod
     def select(self, time):
@@ -142,15 +146,7 @@ class Ambient:
 
     @staticmethod
     def from_csv_file(file):
-        df = pd.read_csv(
-            file,
-            sep=',',
-            header=0,
-            skipinitialspace=True,
-            skip_blank_lines=True,
-            comment='#',
-        )
-
+        df = read_csv(file)
         return Ambient.from_dataframe(df)
 
     @staticmethod
@@ -266,7 +262,7 @@ class OutputCSV(Output):
         # Append result to file, write headers only if blank file
         df.to_csv(
             self.dset,
-            line_terminator='\n',
+            lineterminator='\n',
             header=self._blank_file,
             float_format=self.float_format,
             index=False,
