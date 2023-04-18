@@ -4,8 +4,9 @@ tags:
   - Python
   - wastewater
   - turbulence
-  - galactic dynamics
-  - milky way
+  - outfalls
+  - plumes
+
 authors:
   - name: Pål Næverlid Sævik
     orcid: 0000-0002-7301-2008
@@ -29,8 +30,8 @@ be harmful to the environment unless sufficiently diluted. Also,
 wastewater containing nutrients may lead to eutrophication of the receiving
 water body if the outfall rises to the surface. Computer modelling of the
 dilution process may help discover this type of problems before they appear,
-and can guide the design of an outfall system to minimize the impact to the
-environment.
+and can guide the design of an outfall system to minimize environmental
+impact.
 
 # Statement of need
 
