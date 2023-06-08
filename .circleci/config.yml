@@ -25,10 +25,8 @@ jobs:
       - run:
           name: "Run simple command-line example"
           command: |
-            mkdir ./cli_test/
-            cp ./docs/source/examples/jet/config.toml ./cli_test/
-            python -m effluent ./cli_test/config.toml
-            cat ./cli_test/out.csv
+            python -m effluent ./docs/source/examples/jet/config.toml
+            cat out.csv
       - run:
           name: "Run pytest"
           command: pytest
