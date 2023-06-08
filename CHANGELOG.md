@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2023-06-07
 
 ### Added
-- External script for starting the program
+- Command line script for starting the program
 
 ### Fixed
 - Included dask as an explicit dependency

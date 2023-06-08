@@ -20,9 +20,9 @@ The package is installed using pip:
 
 # Usage
 
-The software is invoked from the command line as
+The software is invoked as a command line script:
 
-    python -m effluent config.toml
+    effluent config.toml
 
 where `config.toml` is the configuration file specifying the simulation
 setup.
@@ -32,4 +32,4 @@ setup.
 
 Check out the
 [online documentation](https://effluent.readthedocs.io/en/latest/) for a
-description of the algorithm and software features.
+detailed description of the algorithm and software features.
