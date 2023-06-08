@@ -23,6 +23,11 @@ jobs:
           name: "Install package"
           command: pip install .
       - run:
+          name: "Run simple command-line example"
+          command: |
+            effluent ./docs/source/examples/jet/config.toml
+            cat out.csv
+      - run:
           name: "Run pytest"
           command: pytest
       - run:
