@@ -22,8 +22,28 @@ def main():
     Main script, runnable from the command line
     :return: 0 if successful
     """
-    import sys
-    run(*sys.argv[1:])
+    import argparse
+    from . import __version__ as version_str
+
+    parser = argparse.ArgumentParser(
+        prog='effluent',
+        description=(
+            f'Effluent (v{version_str}) is a python package for simulating dispersion of effluent\n'
+            'discharges from wastewater pipes.\n\n'
+            'See online documentation at https://effluent.readthedocs.io/'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        'config_file',
+        help='Path of config file',
+    )
+
+    args = parser.parse_args()
+
+    run(args.config_file)
+
     return 0
 
 
