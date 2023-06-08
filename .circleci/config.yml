@@ -25,7 +25,7 @@ jobs:
       - run:
           name: "Run simple command-line example"
           command: |
-            python -m effluent ./docs/source/examples/jet/config.toml
+            effluent ./docs/source/examples/jet/config.toml
             cat out.csv
       - run:
           name: "Run pytest"

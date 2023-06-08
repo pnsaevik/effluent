@@ -17,6 +17,16 @@ def run(conf):
     return model.output.file
 
 
+def main():
+    """
+    Main script, runnable from the command line
+    :return: 0 if successful
+    """
+    import sys
+    run(*sys.argv[1:])
+    return 0
+
+
 def init_logger(loglevel=None):
     import logging
     if loglevel is None:
