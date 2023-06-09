@@ -18,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: "Install prerequisites"
-          command: pip install pytest sphinx matplotlib
+          command: pip install pytest sphinx matplotlib sphinx-autoapi
       - run:
           name: "Install package"
           command: pip install .
