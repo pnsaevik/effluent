@@ -3,3 +3,4 @@ pandas
 xarray
 h5netcdf
 scipy
+sphinx-autoapi
