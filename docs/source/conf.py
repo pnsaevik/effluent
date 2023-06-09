@@ -104,3 +104,9 @@ autoapi_dirs = ['../../src']
 autoapi_add_toctree_entry = True
 autoapi_member_order = 'alphabetical'
 autoapi_template_dir = '_templates/autoapi'
+autoapi_options = [
+    'members',
+    'show-inheritance',
+    'show-module-summary',
+    'imported-members',
+]
