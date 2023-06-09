@@ -71,4 +71,4 @@ Documentation
     algorithm
     config
     examples
-    api
+    autoapi/index

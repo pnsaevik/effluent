@@ -2,8 +2,8 @@ def run(conf):
     """
     Run the main script and save the output in the specified file
 
-    :param conf: Simulation configuration parameters (dict object or name of .toml file)
-    See online documentation for a description of available options.
+    :param conf: Simulation configuration parameters (dict object or name of .toml file).
+        See online documentation for a description of available options.
 
     :return: Name of output file
     """
@@ -20,6 +20,7 @@ def run(conf):
 def main():
     """
     Main script, runnable from the command line
+
     :return: 0 if successful
     """
     import argparse
