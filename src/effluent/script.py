@@ -1,3 +1,8 @@
+"""
+This is subpackage documentation
+"""
+
+
 def run(conf):
     """
     Run the main script and save the output in the specified file

@@ -12,16 +12,12 @@ It is required to supply either a complete set of explicit parameters
 name of an external file containing the parameters (:confval:`pipe.csv.file`
 or :confval:`pipe.nc.file`).
 
-|
-
 .. confval:: pipe.time
 
     :type: array
     :units: s
 
     Time since simulation start.
-
-|
 
 .. confval:: pipe.flow
 
@@ -30,8 +26,6 @@ or :confval:`pipe.nc.file`).
 
     Pipe flow rate.
     One entry for each :confval:`pipe.time` value.
-
-|
 
 .. confval:: pipe.dens
 
@@ -44,8 +38,6 @@ or :confval:`pipe.nc.file`).
     in which case the density is computed using the UNESCO seawater equation
     of state |jackett1995|_.
 
-|
-
 .. confval:: pipe.temp
 
     :type: array
@@ -55,8 +47,6 @@ or :confval:`pipe.nc.file`).
     One entry for each :confval:`pipe.time` value.
     Either supply both :confval:`pipe.temp` and :confval:`pipe.salt`, or
     supply values for :confval:`pipe.dens`.
-
-|
 
 .. confval:: pipe.salt
 
@@ -68,8 +58,6 @@ or :confval:`pipe.nc.file`).
     Either supply both :confval:`pipe.temp` and :confval:`pipe.salt`, or
     supply values for :confval:`pipe.dens`.
 
-|
-
 .. confval:: pipe.diam
 
     :type: array
@@ -77,8 +65,6 @@ or :confval:`pipe.nc.file`).
 
     Diameter of pipe outlet.
     One entry for each :confval:`pipe.time` value.
-
-|
 
 .. confval:: pipe.depth
 
@@ -88,8 +74,6 @@ or :confval:`pipe.nc.file`).
     Depth of pipe outlet.
     One entry for each :confval:`pipe.time` value.
 
-|
-
 .. confval:: pipe.decline
 
     :type: array
@@ -97,8 +81,6 @@ or :confval:`pipe.nc.file`).
 
     Direction of pipe outlet (positive is downwards).
     One entry for each :confval:`pipe.time` value.
-
-|
 
 .. confval:: pipe.csv.file
 
@@ -108,8 +90,6 @@ or :confval:`pipe.nc.file`).
    column (with header) for each pipe parameter. Columns must be
    comma-separated. Lines starting with ``#`` are treated as comments, and
    whitespace is ignored.
-
-|
 
 .. confval:: pipe.nc.file
 

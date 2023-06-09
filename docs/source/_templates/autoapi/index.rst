@@ -3,8 +3,8 @@ API Reference
 
 Since ``effluent`` is intended for research applications, users are encouraged
 to fork the code and implement modifications to suit their needs (still
-:ref:`citing <citation>` the original source, of course). For this reason,
-a short API reference is provided for users who want to familiarize themselves
+:ref:`citing <citation>` the original source, of course).
+A basic API reference is provided for users who want to familiarize themselves
 with the source code.
 
 Unlike the :doc:`configuration file <../config>`, the structure of the source
@@ -15,14 +15,16 @@ fixed. Breaking changes are not introduced unless there are very good reasons
 to do so, in which case the major version number is updated.
 
 The API reference is auto-generated from docstrings using
-`sphinx-autoapi <https://github.com/readthedocs/sphinx-autoapi>`_. The main
-entry point is the function :func:`effluent.run`.
+`sphinx-autoapi <https://github.com/readthedocs/sphinx-autoapi>`_. Each
+submodule is listed below:
 
 .. toctree::
    :titlesonly:
+   :maxdepth: 1
 
+   /autoapi/effluent/index
    {% for page in pages %}
-   {% if page.top_level_object and page.display %}
+   {% if page.type == "module" and page.display %}
    {{ page.include_path }}
    {% endif %}
    {% endfor %}

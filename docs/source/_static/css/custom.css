@@ -20,3 +20,15 @@ div.body h3 {
     font-size: 100%;
     font-weight: bold;
 }
+
+dl.function {
+    margin-top: 3em;
+}
+
+dl.confval {
+    margin-top: 3em;
+}
+
+div.footer {
+    margin-top: 3rem;
+}
