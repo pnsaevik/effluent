@@ -1,32 +1,37 @@
-import xarray as xr
+"""
+The module contains functions for working with ROMS datasets
+"""
+
 import numpy as np
 import glob
 
 
-def open_location(file, latitude, longitude, azimuth):
+def open_location(file, lat, lon, az):
     """
-    Open a ROMS dataset and return data for a specific location
+    Open ROMS dataset at specific location
 
-    The output coordinates are 'time' and 'depth'
+    The output coordinates are 'time' and 'depth'. Fields are interpolated to the
+    desired position, and the depth of each vertical level is computed. Current
+    velocities are rotated according to the specified azimuthal orientation.
 
     :param file: Name of ROMS file(s), or wildcard pattern
-    :param latitude: Latitude of location
-    :param longitude: Longitude of location
-    :param azimuth: Azimuthal orientation of u velocity (0 is north, 90 is east)
+    :param lat: Latitude of location
+    :param lon: Longitude of location
+    :param az: Azimuthal orientation of u velocity (0 is north, 90 is east)
     :return: An xarray.Dataset object
     """
 
     # Select position
     dset = open_dataset(file, z_rho=True, dens=True)
-    dset = select_latlon(dset, latitude, longitude)
+    dset = interpolate_latlon(dset, lat, lon)
 
     # Set coordinates
     dset = dset.rename(z_rho_star='depth', ocean_time='time')
     dset = dset.swap_dims({'s_rho': 'depth'})
 
     # Rotate velocity
-    u = compute_azimuthal_velocity(dset, azimuth * (np.pi / 180))
-    v = compute_azimuthal_velocity(dset, (azimuth + 90) * (np.pi / 180))
+    u = compute_azimuthal_vel(dset, az * (np.pi / 180))
+    v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
     dset = dset.assign(u=u, v=v)
 
     return dset
@@ -43,6 +48,8 @@ def open_dataset(file, z_rho=False, dens=False):
     :param dens: True if density should be added (implies z_rho, default: False)
     :return: An xarray.Dataset object
     """
+    import xarray as xr
+
     fnames = sorted(glob.glob(file))
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
@@ -72,6 +79,12 @@ def open_dataset(file, z_rho=False, dens=False):
 
 
 def add_zrho(dset):
+    """
+    Add z_rho variable to a ROMS dataset
+
+    :param dset: An xarray.Dataset object representing a ROMS dataset
+    :return: A new dataset with z_rho added
+    """
     vtrans = dset['Vtransform']
 
     if vtrans == 1:
@@ -91,12 +104,30 @@ def add_zrho(dset):
 
 
 def add_dens(dset):
+    """
+    Add variable ``dens`` to a ROMS dataset
+
+    :param dset: An xarray.Dataset object representing a ROMS dataset
+    :return: A new dataset with ``dens`` added
+    """
     from effluent.eos import roms_rho
     dens = roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     return dset.assign_coords(dens=dens)
 
 
-def select_latlon(dset, lat, lon):
+def interpolate_latlon(dset, lat, lon):
+    """
+    Interpolate fields in ROMS dataset
+
+    The function uses bilinear interpolation for regular field variables, and
+    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
+    variables.
+
+    :param dset: An xarray.Dataset object
+    :param lat: The latitude
+    :param lon: The longitude
+    :return: A new dataset, with all variables interpolated to the specified location
+    """
     from .numerics import bilin_inv
 
     lat_rho = dset.lat_rho.values
@@ -123,10 +154,18 @@ def select_latlon(dset, lat, lon):
     return dset
 
 
-def compute_azimuthal_velocity(dset, azimuth):
+def compute_azimuthal_vel(dset, az):
+    """
+    Compute directional current velocity
+
+    :param dset: An xarray.Dataset object
+    :param az: The direction in which to measure the current
+    :return: An xarray.DataArray representing the current velocity
+    """
+
     assert dset.angle.units == "radians"
 
     u = dset.u
     v = dset.v
-    theta = azimuth + np.pi/2 - dset.angle
+    theta = az + np.pi / 2 - dset.angle
     return u * np.cos(theta) + v * np.sin(theta)

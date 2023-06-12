@@ -623,9 +623,9 @@ class AmbientRoms(Ambient):
             import effluent.roms
             dset = effluent.roms.open_location(
                 file=self.file,
-                latitude=self.latitude,
-                longitude=self.longitude,
-                azimuth=self.azimuth,
+                lat=self.latitude,
+                lon=self.longitude,
+                az=self.azimuth,
             )
 
             keep_vars = ['time', 'depth', 'u', 'v', 'dens']
