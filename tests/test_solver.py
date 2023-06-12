@@ -68,37 +68,37 @@ class Test_Solver_solve:
 
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
-        s = solver.Solver.from_config(dict(step=10, stop=20))
+        s = solver.Solver(step=10, stop=20)
         s.data = (pipe_dset_horz, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
-        s = solver.Solver.from_config(dict(step=10, stop=20))
+        s = solver.Solver(step=10, stop=20)
         s.data = (pipe_dset_decl, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
-        s = solver.Solver.from_config(dict(step=10, stop=20))
+        s = solver.Solver(step=10, stop=20)
         s.data = (pipe_dset_horz, ambient_dset_cross)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
-        s = solver.Solver.from_config(dict(step=10, stop=20))
+        s = solver.Solver(step=10, stop=20)
         s.data = (pipe_dset_horz, ambient_dset_coflow)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
-        s = solver.Solver.from_config(dict(step=10, stop=20))
+        s = solver.Solver(step=10, stop=20)
         s.data = (pipe_dset_light, ambient_dset_still)
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_stratified(self, pipe_dset_light_fast, ambient_dset_stratified):
-        s = solver.Solver.from_config(dict(step=20, stop=200))
+        s = solver.Solver(step=20, stop=200)
         s.data = (pipe_dset_light_fast, ambient_dset_stratified)
         return s.solve()
 
@@ -191,6 +191,6 @@ class Test_Solver_from_config:
             beta_n=1, beta_t=2, mass_n=3, mass_t=4, method=5, rtol=6, atol=7,
             first_step=8, max_step=9, start=10, stop=11, step=12,
         )
-        s = solver.Solver.from_config(conf)
+        s = solver.Solver(**conf)
         for k, v in conf.items():
             assert getattr(s, k) == v

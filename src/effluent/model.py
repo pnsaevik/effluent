@@ -61,7 +61,7 @@ class Model:
         m.pipe = Pipe.from_config(conf['pipe'])
         m.ambient = Ambient.from_config(conf['ambient'])
         m.output = Output.from_config(conf['output'])
-        m.solver = Solver.from_config(conf['solver'])
+        m.solver = Solver(**conf['solver'])
 
         for key in ['start', 'stop', 'step']:
             if key in conf['timestepper']:

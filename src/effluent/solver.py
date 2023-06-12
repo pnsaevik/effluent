@@ -1,5 +1,6 @@
 """
-This is the solver package
+The module contains the :class:`Solver <effluent.solver.Solver>` class, which performs
+numerical integration of the differential equations described in :doc:`/algorithm`.
 """
 
 import numpy as np
@@ -8,29 +9,49 @@ from scipy.integrate import solve_ivp
 
 class Solver:
     """
-    This is the Solver class
+    The class contains methods for solving the model equations.
+
+    The constructor contains many adjustable parameters, related to the numerical
+    solution procedure, the physical model parametrization and the density of output
+    points. A more detailed description of each parameter is given in
+    :doc:`/config/solver`, :doc:`/config/model` and :doc:`/config/output`.
+
+    :param beta_n: Entrainment rate coefficient in the normal (across-jet) direction
+    :param beta_t: Entrainment rate coefficient in the tangential (along-jet) direction
+    :param mass_n: Added mass coefficient in the orthogonal direction
+    :param mass_t: Added mass coefficient in the tangential direction
+    :param method: Integration method to use
+    :param rtol: Relative tolerance
+    :param atol: Absolute tolerance
+    :param first_step: Initial step size
+    :param max_step: Maximum allowed step size
+    :param start: Time (in seconds) of first trajectory point
+    :param stop: Time (in seconds) of last trajectory point
+    :param step: Time (in seconds) between trajectory points
     """
 
-    def __init__(self):
+    def __init__(self, beta_n=0.34, beta_t=0.17, mass_n=1.0, mass_t=0.18, method="RK45",
+                 rtol=1e-3, atol=1e-6, first_step=0, max_step=0, start=0, stop=60,
+                 step=1):
         self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
 
         # Model parameters
-        self.beta_n = 0.34
-        self.beta_t = 0.17
-        self.mass_n = 1.0
-        self.mass_t = 0.18
+        self.beta_n = beta_n
+        self.beta_t = beta_t
+        self.mass_n = mass_n
+        self.mass_t = mass_t
 
         # Solver parameters
-        self.method = "RK45"
-        self.rtol = 1e-3
-        self.atol = 1e-6
-        self.first_step = 0
-        self.max_step = 0
+        self.method = method
+        self.rtol = rtol
+        self.atol = atol
+        self.first_step = first_step
+        self.max_step = max_step
 
         # Output parameters
-        self.start = 0
-        self.stop = 60
-        self.step = 1
+        self.start = start
+        self.stop = stop
+        self.step = step
 
         self._data = None
         self._zmin = None
@@ -38,6 +59,11 @@ class Solver:
 
     @property
     def data(self):
+        """
+        A tuple ``(pipe, ambient)`` of xarray.Dataset objects. The first dataset
+        represents the pipe and effluent discharge properties, while the second one
+        represents the properties of the ambient water masses.
+        """
         return self._data
 
     @data.setter
@@ -47,20 +73,17 @@ class Solver:
         self._zmin = ambient.depth[0].values
         self._zmax = ambient.depth[-1].values
 
-    @staticmethod
-    def from_config(conf):
-        s = Solver()
-        option_names = [
-            'beta_n', 'beta_t', 'mass_n', 'mass_t', 'method', 'rtol', 'atol',
-            'first_step', 'max_step', 'start', 'stop', 'step',
-        ]
-        for k, v in conf.items():
-            if k in option_names:
-                setattr(s, k, v)
-
-        return s
-
     def volume_change_ratio(self, t, y):
+        """
+        Compute the time derivative of log(V) according to :eq:`sol_voldef`.
+
+        This function is required to determine if the simulation should be terminated.
+
+        :param t: Seconds since release
+        :param y: Tuple of primary variables: ``x``, ``y``, ``z``, ``u``, ``v``, ``w``, ``density``, ``radius``
+        :return: Time derivative of log(V)
+        """
+
         # Rename input variables
         # noinspection PyUnusedLocal
         t = t
@@ -110,9 +133,16 @@ class Solver:
 
     def solve(self):
         """
-        This is the solver
-        
-        :return:
+        Solve the differential equations described in :doc:`/algorithm`.
+
+        Internally, this function uses ``scipy.integrate.solve_ivp`` to compute the
+        solution. Solver properties are set using the class constructor.
+
+        The returned dataset contains the value of each primary variable at the
+        pre-determined output points. The variable names are ``x``, ``y``, ``z``, ``u``,
+        ``v``, ``w``, ``density``, ``radius``, all indexed by the coordinate ``t``.
+
+        :return: An xarray.Dataset containing the solution
         """
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
@@ -148,6 +178,13 @@ class Solver:
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 
     def ambient_data(self, depth):
+        """
+        Interpolate ambient data to the specified depth
+
+        :param depth: The desired depth [m]
+        :return: An xarray.Dataset of ambient data interpolated to the desired depth
+        """
+
         ambient = self.data[1]
         # Cannot interpolate if there is only one entry
         if ambient.dims['depth'] == 1:
@@ -156,9 +193,24 @@ class Solver:
         return ambient.interp(depth=clipped_depth)
 
     def pipe_data(self):
+        """
+        Pipe and effluent discharge data
+
+        :return: An xarray.Dataset of pipe and effluent discharge data
+        """
+
         return self.data[0]
 
     def initial_conditions(self):
+        """
+        Initial conditions for the primary variables
+
+        Extract the initial conditions for the primary variables ``x``, ``y``, ``z``,
+        ``u``, ``v``, ``w``, ``density``, ``radius`` as a numpy.ndarray object.
+
+        :return: The initial conditions of the primary variables
+        """
+
         pipe = self.pipe_data()
         x0 = 0
         y0 = 0
@@ -174,10 +226,11 @@ class Solver:
         """
         ODE function to be solved by scipy methods
 
-        The order of the variables is (x, y, z, u, v, w, rho, R)
+        The order of the variables is (x, y, z, u, v, w, density, radius)
 
         :param t: Vectorized time parameter of shape (n_times, )
         :param y: Input vector of shape (n_vars, n_times)
+        :return: Time derivative of the primary variables (n_vars, n_times)
         """
 
         # Rename input variables
