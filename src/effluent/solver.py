@@ -1,9 +1,16 @@
+"""
+This is the solver package
+"""
+
 import numpy as np
-import xarray as xr
 from scipy.integrate import solve_ivp
 
 
 class Solver:
+    """
+    This is the Solver class
+    """
+
     def __init__(self):
         self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
 
@@ -102,6 +109,11 @@ class Solver:
         return ddt_log_V
 
     def solve(self):
+        """
+        This is the solver
+        
+        :return:
+        """
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
         event = lambda t, y: self.volume_change_ratio(t, y)
@@ -131,6 +143,7 @@ class Solver:
             res_y = np.concatenate([res_y, evt_y[0].T], axis=1)
 
         # Organize result
+        import xarray as xr
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 

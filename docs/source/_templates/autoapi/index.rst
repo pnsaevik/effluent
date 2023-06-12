@@ -16,7 +16,7 @@ to do so, in which case the major version number is updated.
 
 The API reference is auto-generated from docstrings using
 `sphinx-autoapi <https://github.com/readthedocs/sphinx-autoapi>`_. Each
-submodule is listed below:
+submodule is listed below. The main entry point is :func:`effluent.run`.
 
 .. toctree::
    :titlesonly:

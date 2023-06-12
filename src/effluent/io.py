@@ -1,12 +1,16 @@
-import abc
+"""
+This is the io package
+"""
 
-import netCDF4 as nc
+import abc
 import numpy as np
-import pandas as pd
-import xarray as xr
 
 
 class Pipe:
+    """
+    This is the Pipe class
+    """
+
     def __init__(self, dset):
         self._dset = dset
         self._time_min = dset.time[0].values
@@ -23,6 +27,8 @@ class Pipe:
 
     @staticmethod
     def from_nc_file(file):
+        import xarray as xr
+
         dset = xr.load_dataset(file)
         return Pipe.from_dataset(dset)
 
@@ -42,6 +48,8 @@ class Pipe:
 
     @staticmethod
     def from_dataframe(df):
+        import xarray as xr
+
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
@@ -49,6 +57,8 @@ class Pipe:
 
     @staticmethod
     def from_dataset(dset):
+        import xarray as xr
+
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
@@ -66,6 +76,8 @@ class Pipe:
 
     @staticmethod
     def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+        import pandas as pd
+
         data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
         if salt is not None:
             data['salt'] = salt
@@ -86,6 +98,8 @@ class Pipe:
 
 
 def read_csv(file):
+    import pandas as pd
+
     return pd.read_csv(
         file,
         sep=',',
@@ -98,6 +112,10 @@ def read_csv(file):
 
 
 class Ambient:
+    """
+    This is the Ambient class
+    """
+
     @abc.abstractmethod
     def select(self, time):
         return NotImplementedError
@@ -115,11 +133,15 @@ class Ambient:
 
     @staticmethod
     def from_nc_file(file):
+        import xarray as xr
+
         dset = xr.load_dataset(file)
         return Ambient.from_dataset(dset)
 
     @staticmethod
     def from_dataframe(df):
+        import xarray as xr
+
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index(['time', 'depth'])
 
@@ -134,6 +156,8 @@ class Ambient:
 
         # Compute density from temp and salt if not present
         if 'dens' not in dset:
+            import xarray as xr
+
             from . import eos
             data = eos.roms_rho(
                 temp=dset['temp'].values,
@@ -151,6 +175,7 @@ class Ambient:
 
     @staticmethod
     def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
+        import xarray as xr
         shp = (len(time), len(depth))
 
         variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
@@ -185,6 +210,10 @@ class AmbientXarray(Ambient):
 
 
 class Output:
+    """
+    This is the Output class
+    """
+
     @staticmethod
     def from_config(conf):
         if 'csv' in conf:
@@ -196,6 +225,13 @@ class Output:
 
     @abc.abstractmethod
     def write(self, time, result):
+        """
+        This is the writer
+        
+        :param time:
+        :param result:
+        :return:
+        """
         return NotImplementedError
 
     def close(self):
@@ -272,6 +308,8 @@ class OutputCSV(Output):
 
 class OutputNC(Output):
     def __init__(self, file, variables):
+        import xarray as xr
+
         self.variables = variables
         self.dset = None
         self._blank_file = True
@@ -300,6 +338,7 @@ class OutputNC(Output):
 
     def open(self):
         if self.dset is None:
+            import netCDF4 as nc
             self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
             self._blank_file = True
 
@@ -376,7 +415,7 @@ class OutputNC(Output):
         r.coords['release_time'].attrs['units'] = 's'
 
 
-def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+def write_xr_to_nc(xr_dset, nc_dset):
     unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
 
     # Write dimensions
@@ -400,7 +439,9 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     nc_dset.setncatts(xr_dset.attrs)
 
 
-def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
+def write_nc_to_xr(nc_dset, xr_dset):
+    import xarray as xr
+
     # Write variables
     for name, nc_var in nc_dset.variables.items():
         xr_var = xr.Variable(
@@ -415,7 +456,7 @@ def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
         xr_dset.attrs[k] = nc_dset.getncattr(k)
 
 
-def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+def append_xr_to_nc(xr_dset, nc_dset):
     unlim_dims = [k for k, v in nc_dset.dimensions.items() if v.isunlimited()]
     unlim_dim = unlim_dims[0] if len(unlim_dims) > 0 else None
     unlim_vars = [k for k, v in xr_dset.variables.items() if v.dims[0] == unlim_dim]

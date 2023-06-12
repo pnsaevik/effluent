@@ -106,6 +106,7 @@ autoapi_member_order = 'alphabetical'
 autoapi_template_dir = '_templates/autoapi'
 autoapi_options = [
     'members',
+    'special-members',
     'show-inheritance',
     'show-module-summary',
     'imported-members',

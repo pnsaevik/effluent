@@ -5,10 +5,13 @@ This is subpackage documentation
 
 def run(conf):
     """
-    Run the main script and save the output in the specified file
+    Run the simulation and save the output in the specified file.
 
-    :param conf: Simulation configuration parameters (dict object or name of .toml file).
-        See online documentation for a description of available options.
+    Internally, the function creates a :class:`Model <effluent.model.Model>` object
+    using the information from the config file, and calls the
+    :func:`run <effluent.model.Model.run>` method of that object.
+
+    :param conf: :doc:`Configuration parameters </config>` (dict object or file name).
 
     :return: Name of output file
     """
