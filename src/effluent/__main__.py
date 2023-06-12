@@ -1,3 +1,3 @@
-from . import main
+from .script import main
 
 main()
