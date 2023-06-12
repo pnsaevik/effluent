@@ -1,5 +1,5 @@
 """
-This is the io package
+The package contains functions and classes for reading and writing simulation data.
 """
 
 import abc
@@ -8,7 +8,13 @@ import numpy as np
 
 class Pipe:
     """
-    This is the Pipe class
+    Data about the pipe and the effluent release.
+
+    The constructor takes an xarray.Dataset object as input. If the source data is
+    in the form of a data file, the factory method should be used instead.
+
+    :param dset: An xarray.Dataset object with variables ``depth``, ``u``,
+        ``w``, ``dens`` and ``diam``, all indexed by the coordinate ``time``.
     """
 
     def __init__(self, dset):
@@ -18,6 +24,12 @@ class Pipe:
 
     @staticmethod
     def from_config(conf):
+        """
+        Initialize using :doc:`configuration parameters </config/pipe>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
         if 'csv' in conf:
             return Pipe.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
@@ -89,6 +101,14 @@ class Pipe:
         return Pipe.from_dataframe(df)
 
     def select(self, time):
+        """
+        Interpolate pipe parameters to a specific point in time
+
+        :param time: A time in numpy.datetime64 format
+        :return: An xarray.Dataset object with variables ``depth``, ``u``, ``w``,
+            ``dens`` and ``diam``.
+        """
+
         if self._dset.dims['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
@@ -98,6 +118,12 @@ class Pipe:
 
 
 def read_csv(file):
+    """
+    Read csv file, and return a pandas.DataFrame
+
+    :param file: File name
+    :return: A pandas.DataFrame object
+    """
     import pandas as pd
 
     return pd.read_csv(
@@ -113,15 +139,32 @@ def read_csv(file):
 
 class Ambient:
     """
-    This is the Ambient class
+    Data about the ambient ocean.
+
+    This is an abstract base class with no explicit constructor. To initialize an
+    instance of the class, use the factory method.
     """
 
     @abc.abstractmethod
     def select(self, time):
+        """
+        Compute the ambient conditions at a specific time.
+
+        :param time: A numpy.datetime64 object
+        :return: An xarray.Dataset object with variables ``u``, ``v`` and ``dens``, all
+            indexed by the coordinate ``depth``.
+        """
         return NotImplementedError
 
     @staticmethod
     def from_config(conf):
+        """
+        Initialize using :doc:`configuration parameters </config/ambient>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
+
         if 'csv' in conf:
             return Ambient.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
@@ -191,10 +234,23 @@ class Ambient:
         return Ambient.from_dataset(dset)
 
     def close(self):
+        """
+        Close the underlying data source
+        """
         pass
 
 
 class AmbientXarray(Ambient):
+    """
+    Data about the ambient ocean, from in-memory dataset.
+
+    This subclass is using an xarray.Dataset object as its data source. The dataset
+    should have variables ``u``, ``v`` and ``dens``, all indexed by the coordinates
+    ``depth`` and ``time``.
+
+    :param dset: An xarray.Dataset object
+    """
+
     def __init__(self, dset):
         self._dset = dset
         self._tmin = dset.time[0].values
@@ -211,11 +267,21 @@ class AmbientXarray(Ambient):
 
 class Output:
     """
-    This is the Output class
+    Class for writing simulation output to disk
+
+    This is an abstract base class with no explicit constructor. To initialize an
+    instance of the class, use the factory method.
     """
 
     @staticmethod
     def from_config(conf):
+        """
+        Initialize using :doc:`configuration parameters </config/output>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
+
         if 'csv' in conf:
             return OutputCSV.from_config(conf)
         elif 'nc' in conf:
@@ -226,20 +292,32 @@ class Output:
     @abc.abstractmethod
     def write(self, time, result):
         """
-        This is the writer
-        
-        :param time:
-        :param result:
-        :return:
+        Write simulation results to disk
+
+        :param time: Discharge time, as numpy.datetime64 object
+        :param result: Simulation result, as returned by :func:`effluent.solver.Solver.solve`
         """
         return NotImplementedError
 
     def close(self):
+        """
+        Close the underlying data stream
+        """
         pass
 
 
 class OutputCSV(Output):
-    def __init__(self, file, variables, float_format, separator):
+    """
+    Class for writing simulation output to CSV file.
+
+    The output file is created lazily upon the first write statement.
+
+    :param file: Name of output file
+    :param variables: A list of variable names to include
+    :param float_format: Output format for float numbers
+    :param separator: Symbol used as data separator
+    """
+    def __init__(self, file, variables=None, float_format="%.10g", separator=","):
         self.variables = variables
         self.float_format = float_format
         self.separator = separator
@@ -276,13 +354,15 @@ class OutputCSV(Output):
 
     @staticmethod
     def from_config(conf):
-        out = OutputCSV(
-            file=conf['csv']['file'],
-            variables=conf.get('variables', None),
-            float_format=conf['csv'].get('float_format', '%.10g'),
-            separator=conf.get('separator', ','),
-        )
-        return out
+        params = dict(file=conf['csv']['file'])
+        if 'variables' in conf:
+            params['variables'] = conf['variables']
+        if 'float_format' in conf['csv']:
+            params['float_format'] = conf['csv']['float_format']
+        if 'separator' in conf['csv']:
+            params['separator'] = conf['csv']['separator']
+
+        return OutputCSV(**params)
 
     def write(self, time, result):
         self.open()  # Lazy opening: Only effective if first time
@@ -307,6 +387,15 @@ class OutputCSV(Output):
 
 
 class OutputNC(Output):
+    """
+    Class for writing simulation output to netCDF file.
+
+    The output file is created lazily upon the first write statement.
+
+    :param file: Name of output file
+    :param variables: A list of variable names to include
+    """
+
     def __init__(self, file, variables):
         import xarray as xr
 
@@ -416,6 +505,12 @@ class OutputNC(Output):
 
 
 def write_xr_to_nc(xr_dset, nc_dset):
+    """
+    Write data from an xarray.Dataset to a netCDF4.Dataset
+
+    :param xr_dset: An xarray.Dataset object
+    :param nc_dset: A netCDF4.Dataset object
+    """
     unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
 
     # Write dimensions
@@ -440,6 +535,12 @@ def write_xr_to_nc(xr_dset, nc_dset):
 
 
 def write_nc_to_xr(nc_dset, xr_dset):
+    """
+    Write data from a netCDF4.Dataset to a an xarray.Dataset
+
+    :param xr_dset: An xarray.Dataset object
+    :param nc_dset: A netCDF4.Dataset object
+    """
     import xarray as xr
 
     # Write variables
@@ -457,6 +558,15 @@ def write_nc_to_xr(nc_dset, xr_dset):
 
 
 def append_xr_to_nc(xr_dset, nc_dset):
+    """
+    Append data from an xarray.Dataset to a netCDF4.Dataset
+
+    This method does not create new variables in the destination dataset, but only
+    appends to the existing variables.
+
+    :param xr_dset: An xarray.Dataset object
+    :param nc_dset: A netCDF4.Dataset object
+    """
     unlim_dims = [k for k, v in nc_dset.dimensions.items() if v.isunlimited()]
     unlim_dim = unlim_dims[0] if len(unlim_dims) > 0 else None
     unlim_vars = [k for k, v in xr_dset.variables.items() if v.dims[0] == unlim_dim]
@@ -473,6 +583,21 @@ def append_xr_to_nc(xr_dset, nc_dset):
 
 
 class AmbientRoms(Ambient):
+    """
+    Data about the ambient ocean, from ROMS.
+
+    This subclass is using ROMS output files as its data source. The constructor also
+    needs the pipe position and azimuth, as described in the
+    :doc:`documentation </config/ambient>` of the configuration file.
+
+    The class lazily opens the underlying data source the first time it's needed.
+
+    :param file: A set of ROMS files, specified with a wildcard string
+    :param latitude: The pipe latitude
+    :param longitude: The pipe longitude
+    :param azimuth: The pipe azimuth (north = 0, east = 90)
+    """
+
     def __init__(self, file, latitude, longitude, azimuth):
         self.file = file
         self.latitude = latitude
