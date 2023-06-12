@@ -1,5 +1,5 @@
 """
-This is subpackage documentation
+The module contains the main entry point of the application
 """
 
 
@@ -29,6 +29,8 @@ def main():
     """
     Main script, runnable from the command line
 
+    The function uses the `argparse` library to parse arguments from the command line.
+
     :return: 0 if successful
     """
     import argparse
@@ -57,6 +59,12 @@ def main():
 
 
 def init_logger(loglevel=None):
+    """
+    Initialize the python logger
+
+    :param loglevel: Desired output loglevel
+    """
+
     import logging
     if loglevel is None:
         loglevel = logging.DEBUG
