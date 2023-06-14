@@ -91,7 +91,10 @@ class Solver:
         :param y: Tuple of primary variables: ``x``, ``y``, ``z``, ``u``, ``v``, ``w``, ``density``, ``radius``
         :return: Time derivative of log(V)
         """
+        _vars = self._compute_vars(t, y)
+        return _vars[0]
 
+    def _compute_vars(self, t, y):
         # Rename input variables
         # noinspection PyUnusedLocal
         t = t
@@ -134,7 +137,8 @@ class Solver:
         denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
         ddt_log_V = nominator / denominator
 
-        return ddt_log_V
+        return (ddt_log_V, rho_a, rho, rho_ratio, delta_u, delta_v, u, v, w,
+                gravity_factor, ddt_R)
 
     def solve(self):
         """
@@ -213,52 +217,8 @@ class Solver:
         :return: Time derivative of the primary variables (n_vars, n_times)
         """
 
-        # Rename input variables
-        # noinspection PyUnusedLocal
-        t = t
-        y_in = y
-        x, y, z, u, v, w, rho, R = y_in
-
-        # Define coefficients
-        beta_t = self.beta_t          # Entrainment coefficient, co-flow
-        beta_n = self.beta_n          # Entrainment coefficient, cross-flow
-        K_t = 1 / (1 + self.mass_t)   # Added mass coefficient, tangential gravity pull
-        K_n = 1 / (1 + self.mass_n)   # Added mass coefficient, normal gravity pull
-        g = 9.81                      # Acceleration of gravity
-
-        # Extract ambient velocity and density
-        rho_a, u_a, v_a = self._ambient_data(z)
-
-        # Compute added mass coefficient
-        squared_horizontal_speed = u*u + v*v
-        w2 = w*w
-        squared_speed = squared_horizontal_speed + w2
-        K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
-
-        # Compute flow difference in tangential and normal direction
-        delta_u = u - u_a
-        delta_v = v - v_a
-        squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
-        speed = np.sqrt(squared_speed)
-        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
-        sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
-        delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
-
-        # Displacement
-        ddt_x = u
-        ddt_y = v
-        ddt_z = w
-
-        # Jet expansion rate (entrainment rate)
-        ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
-
-        # Conservation of volume
-        ddt_log_R2 = 2 * ddt_R / R
-        rho_ratio = rho_a / rho
-        gravity_factor = K * (1 - rho_ratio) * g
-        nominator = ddt_log_R2 + gravity_factor * w / squared_speed
-        denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
-        ddt_log_V = nominator / denominator
+        _vars = self._compute_vars(t, y)
+        ddt_log_V, rho_a, rho, rho_ratio, delta_u, delta_v, u, v, w, gf, ddt_R = _vars
 
         # Conservation of mass
         ddt_rho = ddt_log_V * (rho_a - rho)
@@ -267,7 +227,12 @@ class Solver:
         prefix = -ddt_log_V * rho_ratio
         ddt_u = prefix * delta_u
         ddt_v = prefix * delta_v
-        ddt_w = prefix * w + gravity_factor
+        ddt_w = prefix * w + gf
+
+        # Displacement
+        ddt_x = u
+        ddt_y = v
+        ddt_z = w
 
         ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_rho, ddt_R])
         return ddt_y
