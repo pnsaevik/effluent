@@ -5,6 +5,7 @@ numerical integration of the differential equations described in :doc:`/algorith
 
 import numpy as np
 from scipy.integrate import solve_ivp
+import effluent.io
 
 
 class Solver:
@@ -53,25 +54,32 @@ class Solver:
         self.stop = stop
         self.step = step
 
-        self._data = None
-        self._zmin = None
-        self._zmax = None
+        self._pipe = None
+        self._ambient = None
 
-    @property
-    def data(self):
+    def set_init(self, pipe: effluent.io.Pipe, time):
         """
-        A tuple ``(pipe, ambient)`` of xarray.Dataset objects. The first dataset
-        represents the pipe and effluent discharge properties, while the second one
-        represents the properties of the ambient water masses.
-        """
-        return self._data
+        Set initial conditions
 
-    @data.setter
-    def data(self, value):
-        self._data = value
-        ambient = self.data[1]
-        self._zmin = ambient.depth[0].values
-        self._zmax = ambient.depth[-1].values
+        Set initial conditions of the initial value problem by sampling pipe parameters
+        at a specific point in time.
+
+        :param pipe: Properties of the pipe and effluent discharge
+        :param time: Sampling time
+        """
+        self._pipe = pipe.select(time).compute()
+
+    def set_ambient(self, ambient: effluent.io.Ambient, time):
+        """
+        Set ambient conditions
+
+        Set ambient conditions of the initial value problem by sampling ocean data
+        at a specific point in time.
+
+        :param ambient: Properties of the ambient ocean
+        :param time: Sampling time
+        """
+        self._ambient = ambient.select(time).compute()
 
     def volume_change_ratio(self, t, y):
         """
@@ -98,10 +106,7 @@ class Solver:
         g = 9.81                      # Acceleration of gravity
 
         # Extract ambient velocity and density
-        ambient = self.ambient_data(z)
-        u_a = ambient.u.values
-        v_a = ambient.v.values
-        rho_a = ambient.dens.values
+        rho_a, u_a, v_a = self._ambient_data(z)
 
         # Compute added mass coefficient
         squared_horizontal_speed = u*u + v*v
@@ -153,7 +158,7 @@ class Solver:
         result = solve_ivp(
             fun=self.odefunc,
             t_span=steps[[0, -1]],
-            y0=self.initial_conditions(),
+            y0=self._initial_conditions(),
             t_eval=steps,
             vectorized=True,
             method=self.method,
@@ -177,41 +182,16 @@ class Solver:
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 
-    def ambient_data(self, depth):
-        """
-        Interpolate ambient data to the specified depth
+    def _ambient_data(self, depth):
+        amb = self._ambient
+        d_a = np.interp(depth, amb.depth.values, amb.dens.values)
+        u_a = np.interp(depth, amb.depth.values, amb.u.values)
+        v_a = np.interp(depth, amb.depth.values, amb.v.values)
 
-        :param depth: The desired depth [m]
-        :return: An xarray.Dataset of ambient data interpolated to the desired depth
-        """
+        return np.array([d_a, u_a, v_a])
 
-        ambient = self.data[1]
-        # Cannot interpolate if there is only one entry
-        if ambient.dims['depth'] == 1:
-            return ambient.isel(depth=0)
-        clipped_depth = np.clip(depth, self._zmin, self._zmax)
-        return ambient.interp(depth=clipped_depth)
-
-    def pipe_data(self):
-        """
-        Pipe and effluent discharge data
-
-        :return: An xarray.Dataset of pipe and effluent discharge data
-        """
-
-        return self.data[0]
-
-    def initial_conditions(self):
-        """
-        Initial conditions for the primary variables
-
-        Extract the initial conditions for the primary variables ``x``, ``y``, ``z``,
-        ``u``, ``v``, ``w``, ``density``, ``radius`` as a numpy.ndarray object.
-
-        :return: The initial conditions of the primary variables
-        """
-
-        pipe = self.pipe_data()
+    def _initial_conditions(self):
+        pipe = self._pipe
         x0 = 0
         y0 = 0
         z0 = pipe.depth.values.item()
@@ -247,10 +227,7 @@ class Solver:
         g = 9.81                      # Acceleration of gravity
 
         # Extract ambient velocity and density
-        ambient = self.ambient_data(z)
-        u_a = ambient.u.values
-        v_a = ambient.v.values
-        rho_a = ambient.dens.values
+        rho_a, u_a, v_a = self._ambient_data(z)
 
         # Compute added mass coefficient
         squared_horizontal_speed = u*u + v*v

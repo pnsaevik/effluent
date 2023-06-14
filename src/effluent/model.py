@@ -70,27 +70,6 @@ class Model:
 
         return m
 
-    def data(self, time):
-        """
-        Get simulation data for a particular point in time.
-
-        The function interpolates pipe parameters and ambient parameters to a particular
-        point in time, and return the result as a tuple of xarray.Dataset objects
-        ``(pipe, ambient)``.
-        The ``pipe`` dataset has the variables ``depth``, ``u``, ``w``, ``dens`` and
-        ``diam``. The ``ambient`` dataset has variables ``u``, ``v`` and ``dens``, all
-        indexed by the coordinate ``depth``.
-
-        The function is used internally to compute initial conditions as well as ambient
-        conditions at different depths. It may also be used for visualization purposes.
-
-        :param time: A numpy.datetime64 time object
-        :return: A tuple of xarray.Dataset objects ``(pipe, ambient)``
-        """
-        pipe = self.pipe.select(time).compute()
-        ambient = self.ambient.select(time).compute()
-        return pipe, ambient
-
     def run(self):
         """
         Execute the simulation using repeated calls to
@@ -131,7 +110,8 @@ class Model:
         # Do timestepping
         try:
             for time in times:
-                self.solver.data = self.data(time)
+                self.solver.set_init(self.pipe, time)
+                self.solver.set_ambient(self.ambient, time)
                 result = self.solver.solve()
                 self.output.write(time, result)
                 yield result

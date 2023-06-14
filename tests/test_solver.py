@@ -69,37 +69,43 @@ class Test_Solver_solve:
     @pytest.fixture(scope='class')
     def result_horz_still(self, pipe_dset_horz, ambient_dset_still):
         s = solver.Solver(step=10, stop=20)
-        s.data = (pipe_dset_horz, ambient_dset_still)
+        s._pipe = pipe_dset_horz
+        s._ambient = ambient_dset_still
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
         s = solver.Solver(step=10, stop=20)
-        s.data = (pipe_dset_decl, ambient_dset_still)
+        s._pipe = pipe_dset_decl
+        s._ambient = ambient_dset_still
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_cross(self, pipe_dset_horz, ambient_dset_cross):
         s = solver.Solver(step=10, stop=20)
-        s.data = (pipe_dset_horz, ambient_dset_cross)
+        s._pipe = pipe_dset_horz
+        s._ambient = ambient_dset_cross
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_horz_coflow(self, pipe_dset_horz, ambient_dset_coflow):
         s = solver.Solver(step=10, stop=20)
-        s.data = (pipe_dset_horz, ambient_dset_coflow)
+        s._pipe = pipe_dset_horz
+        s._ambient = ambient_dset_coflow
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_still(self, pipe_dset_light, ambient_dset_still):
         s = solver.Solver(step=10, stop=20)
-        s.data = (pipe_dset_light, ambient_dset_still)
+        s._pipe = pipe_dset_light
+        s._ambient = ambient_dset_still
         return s.solve()
 
     @pytest.fixture(scope='class')
     def result_light_stratified(self, pipe_dset_light_fast, ambient_dset_stratified):
         s = solver.Solver(step=20, stop=200)
-        s.data = (pipe_dset_light_fast, ambient_dset_stratified)
+        s._pipe = pipe_dset_light_fast
+        s._ambient = ambient_dset_stratified
         return s.solve()
 
     @staticmethod
