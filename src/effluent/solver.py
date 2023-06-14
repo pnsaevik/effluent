@@ -85,7 +85,7 @@ class Solver:
         """
         Compute the time derivative of log(V) according to :eq:`sol_voldef`.
 
-        This function is required to determine if the simulation should be terminated.
+        This function is required to determine when the simulation should be terminated.
 
         :param t: Seconds since release
         :param y: Tuple of primary variables: ``x``, ``y``, ``z``, ``u``, ``v``, ``w``, ``density``, ``radius``

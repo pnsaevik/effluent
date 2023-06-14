@@ -87,16 +87,19 @@ class Model:
         For each iteration, a new discharge time is simulated using the following
         algorithm:
 
-        1. Initial and ambient conditions are computed using
-           :func:`self.data() <effluent.model.Model.data>`
+        1. Initial conditions are specified using
+           :func:`self.solver.set_init() <effluent.solver.Solver.set_init>`
 
-        2. The numerical solution is computed using
+        2. Ambient conditions are specified using
+           :func:`self.solver.set_ambient() <effluent.solver.Solver.set_ambient>`
+
+        3. The numerical solution is computed using
            :func:`self.solver.solve() <effluent.solver.Solver.solve>`.
 
-        3. The result is written to the output file using
+        4. The result is written to the output file using
            :func:`self.output.write() <effluent.io.Output.write>`
 
-        4. The iterator yields the result
+        5. The iterator yields the result
 
         :return: An iterator for simulating the discharge times sequentially.
         """
