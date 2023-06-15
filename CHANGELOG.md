@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Command line script for starting the program
 - Citation guidance
+- API reference
 
 ### Fixed
 - Included dask as an explicit dependency

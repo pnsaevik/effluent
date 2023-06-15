@@ -1,38 +1,46 @@
-import xarray as xr
+"""
+The module contains functions for working with ROMS datasets
+"""
+
 import numpy as np
 import glob
+import xarray as xr
+import effluent.eos
+import effluent.numerics
 
 
-def open_location(file, latitude, longitude, azimuth):
+def open_location(file, lat, lon, az) -> xr.Dataset:
     """
-    Open a ROMS dataset and return data for a specific location
+    Open ROMS dataset at specific location
 
-    The output coordinates are 'time' and 'depth'
+    The output coordinates are 'time' and 'depth'. Fields are interpolated to the
+    desired position, and the depth of each vertical level is computed. Current
+    velocities are rotated according to the specified azimuthal orientation.
 
     :param file: Name of ROMS file(s), or wildcard pattern
-    :param latitude: Latitude of location
-    :param longitude: Longitude of location
-    :param azimuth: Azimuthal orientation of u velocity (0 is north, 90 is east)
+    :param lat: Latitude of location
+    :param lon: Longitude of location
+    :param az: Azimuthal orientation of u velocity (0 is north, 90 is east)
     :return: An xarray.Dataset object
     """
 
     # Select position
     dset = open_dataset(file, z_rho=True, dens=True)
-    dset = select_latlon(dset, latitude, longitude)
+    dset = interpolate_latlon(dset, lat, lon)
 
     # Set coordinates
     dset = dset.rename(z_rho_star='depth', ocean_time='time')
     dset = dset.swap_dims({'s_rho': 'depth'})
 
     # Rotate velocity
-    u = compute_azimuthal_velocity(dset, azimuth * (np.pi / 180))
-    v = compute_azimuthal_velocity(dset, (azimuth + 90) * (np.pi / 180))
+    u = compute_azimuthal_vel(dset, az * (np.pi / 180))
+    v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
     dset = dset.assign(u=u, v=v)
 
     return dset
 
 
-def open_dataset(file, z_rho=False, dens=False):
+def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
     """
     Open ROMS dataset
 
@@ -71,7 +79,13 @@ def open_dataset(file, z_rho=False, dens=False):
     return dset
 
 
-def add_zrho(dset):
+def add_zrho(dset: xr.Dataset) -> xr.Dataset:
+    """
+    Add z_rho variable to a ROMS dataset
+
+    :param dset: ROMS dataset
+    :return: New dataset with z_rho added
+    """
     vtrans = dset['Vtransform']
 
     if vtrans == 1:
@@ -90,19 +104,34 @@ def add_zrho(dset):
     )
 
 
-def add_dens(dset):
-    from effluent.eos import roms_rho
-    dens = roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+def add_dens(dset: xr.Dataset) -> xr.Dataset:
+    """
+    Add variable ``dens`` to a ROMS dataset
+
+    :param dset: ROMS dataset
+    :return: New dataset with ``dens`` added
+    """
+    dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     return dset.assign_coords(dens=dens)
 
 
-def select_latlon(dset, lat, lon):
-    from .numerics import bilin_inv
+def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
+    """
+    Interpolate fields in ROMS dataset
 
+    The function uses bilinear interpolation for regular field variables, and
+    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
+    variables.
+
+    :param dset: ROMS dataset
+    :param lat: The latitude
+    :param lon: The longitude
+    :return: New dataset with all variables interpolated to the specified location
+    """
     lat_rho = dset.lat_rho.values
     lon_rho = dset.lon_rho.values
 
-    y, x = bilin_inv(lat, lon, lat_rho, lon_rho)
+    y, x = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
 
     x_min = 0.5
     y_min = 0.5
@@ -123,10 +152,18 @@ def select_latlon(dset, lat, lon):
     return dset
 
 
-def compute_azimuthal_velocity(dset, azimuth):
+def compute_azimuthal_vel(dset: xr.Dataset, az) -> xr.DataArray:
+    """
+    Compute directional current velocity
+
+    :param dset: ROMS dataset
+    :param az: The direction in which to measure the current
+    :return: An xarray.DataArray representing the current velocity
+    """
+
     assert dset.angle.units == "radians"
 
     u = dset.u
     v = dset.v
-    theta = azimuth + np.pi/2 - dset.angle
+    theta = az + np.pi / 2 - dset.angle
     return u * np.cos(theta) + v * np.sin(theta)

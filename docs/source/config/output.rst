@@ -19,8 +19,6 @@ Output is either written to a text file (:confval:`output.csv.file`) or a
 netCDF file (:confval:`output.nc.file`). The option :confval:`output.variables`
 can be used to limit the number of variables written.
 
-|
-
 .. confval:: output.variables
 
     :type: array of strings
@@ -39,16 +37,12 @@ can be used to limit the number of variables written.
     * ``density``: Mean mass density [kg/m³]
     * ``radius``: Radius of top-hat profile [m]
 
-|
-
 .. confval:: output.release.start
 
     :type: date
     :default: 1970-01-01
 
     Date and time of the first simulated trajectory.
-
-|
 
 .. confval:: output.release.stop
 
@@ -57,8 +51,6 @@ can be used to limit the number of variables written.
 
     Date and time of the last simulated trajectory.
 
-|
-
 .. confval:: output.release.step
 
     :type: number
@@ -66,8 +58,6 @@ can be used to limit the number of variables written.
     :default: 86400
 
     Time between each simulated trajectory.
-
-|
 
 .. confval:: output.trajectory.start
 
@@ -78,8 +68,6 @@ can be used to limit the number of variables written.
     The first trajectory point (first value of ``t``) written to the output
     file.
 
-|
-
 .. confval:: output.trajectory.stop
 
     :type: number
@@ -88,8 +76,6 @@ can be used to limit the number of variables written.
 
     The last trajectory point (last value of ``t``) written to the output
     file.
-
-|
 
 .. confval:: output.trajectory.step
 
@@ -102,16 +88,12 @@ can be used to limit the number of variables written.
     same as the internal time step, which is chosen automatically by the
     integration algorithm.
 
-|
-
 .. confval:: output.csv.file
 
     :type: string
 
     Write results to the specified comma-delimited text file.
     Rows are sorted by ``release_time``, then by ``t``.
-
-|
 
 .. confval:: output.csv.float_format
 
@@ -120,8 +102,6 @@ can be used to limit the number of variables written.
 
     Format and precision of floats written to file. Passed directly to
     `pandas.DataFrame.to_csv <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html>`_.
-
-|
 
 .. confval:: output.nc.file
 

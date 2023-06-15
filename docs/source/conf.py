@@ -60,6 +60,9 @@ release = getversion()
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'autoapi.extension',
     'matplotlib.sphinxext.plot_directive',
 ]
 
@@ -94,3 +97,27 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+# -- Options for Sphinx AutoAPI -----------------------------------------------
+
+autoapi_dirs = ['../../src']
+# autoapi_add_toctree_entry = True
+autoapi_member_order = 'alphabetical'
+autoapi_template_dir = '_templates/autoapi'
+autoapi_options = [
+    'members',
+    'special-members',
+    'show-inheritance',
+    'show-module-summary',
+    'imported-members',
+]
+autodoc_typehints = 'description'
+
+
+# -- Options for intersphinx ------------------------
+
+intersphinx_mapping = {
+    'xarray': ('http://xarray.pydata.org/en/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
+}

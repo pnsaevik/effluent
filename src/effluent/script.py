@@ -1,11 +1,17 @@
+"""
+The module contains the main entry point of the application
+"""
+
+
 def run(conf):
     """
-    Run the main script and save the output in the specified file
+    Run the simulation and save the output in the specified file.
 
-    :param conf: Simulation configuration parameters (dict object or name of .toml file)
-    See online documentation for a description of available options.
+    Internally, the function creates a :class:`Model <effluent.model.Model>` object
+    using the information from the config file, and calls the
+    :func:`run <effluent.model.Model.run>` method of that object.
 
-    :return: Name of output file
+    :param conf: :doc:`Configuration parameters </config>` (dict object or file name).
     """
 
     init_logger()
@@ -14,12 +20,13 @@ def run(conf):
     model = Model.from_config(conf)
     model.run()
 
-    return model.output.file
-
 
 def main():
     """
     Main script, runnable from the command line
+
+    The function uses the `argparse` library to parse arguments from the command line.
+
     :return: 0 if successful
     """
     import argparse
@@ -48,6 +55,12 @@ def main():
 
 
 def init_logger(loglevel=None):
+    """
+    Initialize the python logger
+
+    :param loglevel: Desired output loglevel
+    """
+
     import logging
     if loglevel is None:
         loglevel = logging.DEBUG
