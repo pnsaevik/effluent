@@ -1,4 +1,6 @@
-[![CircleCI](https://circleci.com/gh/pnsaevik/effluent.svg?style=shield)](https://circleci.com/gh/pnsaevik/effluent)
+[![CircleCI](
+https://circleci.com/gh/pnsaevik/effluent/tree/main.svg?style=shield)
+](https://circleci.com/gh/pnsaevik/effluent)
 
 # effluent
 
