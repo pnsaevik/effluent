@@ -487,12 +487,12 @@ class OutputNC(Output):
         r.coords['release_time'].attrs['units'] = 's'
 
 
-def write_xr_to_nc(xr_dset, nc_dset):
+def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     """
     Write data from an xarray.Dataset to a netCDF4.Dataset
 
-    :param xr_dset: An xarray.Dataset object
-    :param nc_dset: A netCDF4.Dataset object
+    :param xr_dset: Input dataset
+    :param nc_dset: Output dataset
     """
     unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
 
@@ -517,12 +517,12 @@ def write_xr_to_nc(xr_dset, nc_dset):
     nc_dset.setncatts(xr_dset.attrs)
 
 
-def write_nc_to_xr(nc_dset, xr_dset):
+def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
     """
     Write data from a netCDF4.Dataset to a an xarray.Dataset
 
-    :param xr_dset: An xarray.Dataset object
-    :param nc_dset: A netCDF4.Dataset object
+    :param nc_dset: Input dataset
+    :param xr_dset: Output dataset
     """
 
     # Write variables
@@ -539,15 +539,15 @@ def write_nc_to_xr(nc_dset, xr_dset):
         xr_dset.attrs[k] = nc_dset.getncattr(k)
 
 
-def append_xr_to_nc(xr_dset, nc_dset):
+def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     """
     Append data from an xarray.Dataset to a netCDF4.Dataset
 
     This method does not create new variables in the destination dataset, but only
     appends to the existing variables.
 
-    :param xr_dset: An xarray.Dataset object
-    :param nc_dset: A netCDF4.Dataset object
+    :param xr_dset: Input dataset
+    :param nc_dset: Output dataset
     """
     unlim_dims = [k for k, v in nc_dset.dimensions.items() if v.isunlimited()]
     unlim_dim = unlim_dims[0] if len(unlim_dims) > 0 else None
