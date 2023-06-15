@@ -141,7 +141,7 @@ class Solver:
         return (ddt_log_V, rho_a, rho, rho_ratio, delta_u, delta_v, u, v, w,
                 gravity_factor, ddt_R)
 
-    def solve(self):
+    def solve(self) -> xr.Dataset:
         """
         Solve the differential equations described in :doc:`/algorithm`.
 

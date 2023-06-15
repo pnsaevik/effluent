@@ -112,10 +112,12 @@ autoapi_options = [
     'show-module-summary',
     'imported-members',
 ]
+autodoc_typehints = 'description'
 
 
 # -- Options for intersphinx ------------------------
 
 intersphinx_mapping = {
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
 }

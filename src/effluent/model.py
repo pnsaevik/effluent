@@ -10,6 +10,7 @@ import effluent.io
 import effluent.solver
 import effluent.io
 import effluent.solver
+import xarray as xr
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class Model:
         self.step = step
 
     @staticmethod
-    def from_config(fname_or_dict):
+    def from_config(fname_or_dict) -> "Model":
         """
         Initialize a model object using the :doc:`configuration format </config>`.
 
@@ -79,7 +80,7 @@ class Model:
         for _ in self.irun():
             pass
 
-    def irun(self):
+    def irun(self) -> xr.Dataset:
         """
         Execute the simulation iteratively.
 
@@ -123,7 +124,7 @@ class Model:
             self.ambient.close()
 
 
-def load_config(fname_or_dict):
+def load_config(fname_or_dict) -> dict:
     """
     Convert from external to internal config format.
 
@@ -149,7 +150,7 @@ def load_config(fname_or_dict):
     return c
 
 
-def load_file_or_dict(f):
+def load_file_or_dict(f) -> dict:
     if isinstance(f, dict):
         return f
     else:

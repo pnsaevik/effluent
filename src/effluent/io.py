@@ -29,7 +29,7 @@ class Pipe:
         self._time_max = dset.time[-1].values
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Pipe":
         """
         Initialize using :doc:`configuration parameters </config/pipe>`
 
@@ -44,12 +44,12 @@ class Pipe:
             return Pipe.from_mapping(**conf)
 
     @staticmethod
-    def from_nc_file(file):
+    def from_nc_file(file) -> "Pipe":
         dset = xr.load_dataset(file)
         return Pipe.from_dataset(dset)
 
     @staticmethod
-    def from_csv_file(file):
+    def from_csv_file(file) -> "Pipe":
         df = read_csv(file)
         return Pipe.from_dataframe(df)
 
@@ -63,14 +63,14 @@ class Pipe:
         return u, w
 
     @staticmethod
-    def from_dataframe(df):
+    def from_dataframe(df) -> "Pipe":
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
     @staticmethod
-    def from_dataset(dset):
+    def from_dataset(dset) -> "Pipe":
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
@@ -86,7 +86,7 @@ class Pipe:
         return Pipe(dset)
 
     @staticmethod
-    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None) -> "Pipe":
         data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
         if salt is not None:
             data['salt'] = salt
@@ -97,7 +97,7 @@ class Pipe:
         df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         """
         Interpolate pipe parameters to a specific point in time
 
@@ -114,7 +114,7 @@ class Pipe:
         return self._dset.interp(time=clipped_time)
 
 
-def read_csv(file):
+def read_csv(file) -> pd.DataFrame:
     """
     Read csv file, and return a pandas.DataFrame
 
@@ -141,7 +141,7 @@ class Ambient:
     """
 
     @abc.abstractmethod
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         """
         Compute the ambient conditions at a specific time.
 
@@ -149,10 +149,11 @@ class Ambient:
         :return: An xarray.Dataset object with variables ``u``, ``v`` and ``dens``, all
             indexed by the coordinate ``depth``.
         """
+        # noinspection PyTypeChecker
         return NotImplementedError
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Ambient":
         """
         Initialize using :doc:`configuration parameters </config/ambient>`
 
@@ -170,12 +171,12 @@ class Ambient:
             return Ambient.from_mapping(**conf)
 
     @staticmethod
-    def from_nc_file(file):
+    def from_nc_file(file) -> "Ambient":
         dset = xr.load_dataset(file)
         return Ambient.from_dataset(dset)
 
     @staticmethod
-    def from_dataframe(df):
+    def from_dataframe(df) -> "Ambient":
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index(['time', 'depth'])
 
@@ -183,7 +184,7 @@ class Ambient:
         return Ambient.from_dataset(dset)
 
     @staticmethod
-    def from_dataset(dset):
+    def from_dataset(dset) -> "Ambient":
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
         assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
@@ -200,12 +201,12 @@ class Ambient:
         return AmbientXarray(dset)
 
     @staticmethod
-    def from_csv_file(file):
+    def from_csv_file(file) -> "Ambient":
         df = read_csv(file)
         return Ambient.from_dataframe(df)
 
     @staticmethod
-    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
+    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None) -> "Ambient":
         shp = (len(time), len(depth))
 
         variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
@@ -243,7 +244,7 @@ class AmbientXarray(Ambient):
         self._tmin = dset.time[0].values
         self._tmax = dset.time[-1].values
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         if self._dset.dims['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
@@ -261,7 +262,7 @@ class Output:
     """
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Output":
         """
         Initialize using :doc:`configuration parameters </config/output>`
 
@@ -340,7 +341,7 @@ class OutputCSV(Output):
             self.dset = None
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "OutputCSV":
         params = dict(file=conf['csv']['file'])
         if 'variables' in conf:
             params['variables'] = conf['variables']
@@ -423,7 +424,7 @@ class OutputNC(Output):
             self.dset = None
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "OutputNC":
         out = OutputNC(
             file=conf['nc']['file'],
             variables=conf.get('variables', None)
@@ -622,7 +623,7 @@ class AmbientRoms(Ambient):
             self.dset.close()
             self.dset = None
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         self.open()
 
         clipped_time = np.clip(time, self._tmin, self._tmax)

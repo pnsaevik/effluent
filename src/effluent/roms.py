@@ -9,7 +9,7 @@ import effluent.eos
 import effluent.numerics
 
 
-def open_location(file, lat, lon, az):
+def open_location(file, lat, lon, az) -> xr.Dataset:
     """
     Open ROMS dataset at specific location
 
@@ -40,7 +40,7 @@ def open_location(file, lat, lon, az):
     return dset
 
 
-def open_dataset(file, z_rho=False, dens=False):
+def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
     """
     Open ROMS dataset
 
@@ -79,12 +79,12 @@ def open_dataset(file, z_rho=False, dens=False):
     return dset
 
 
-def add_zrho(dset):
+def add_zrho(dset: xr.Dataset) -> xr.Dataset:
     """
     Add z_rho variable to a ROMS dataset
 
-    :param dset: An xarray.Dataset object representing a ROMS dataset
-    :return: A new dataset with z_rho added
+    :param dset: ROMS dataset
+    :return: New dataset with z_rho added
     """
     vtrans = dset['Vtransform']
 
@@ -104,18 +104,18 @@ def add_zrho(dset):
     )
 
 
-def add_dens(dset):
+def add_dens(dset: xr.Dataset) -> xr.Dataset:
     """
     Add variable ``dens`` to a ROMS dataset
 
-    :param dset: An xarray.Dataset object representing a ROMS dataset
-    :return: A new dataset with ``dens`` added
+    :param dset: ROMS dataset
+    :return: New dataset with ``dens`` added
     """
     dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     return dset.assign_coords(dens=dens)
 
 
-def interpolate_latlon(dset, lat, lon):
+def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
     """
     Interpolate fields in ROMS dataset
 
@@ -123,10 +123,10 @@ def interpolate_latlon(dset, lat, lon):
     unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
     variables.
 
-    :param dset: An xarray.Dataset object
+    :param dset: ROMS dataset
     :param lat: The latitude
     :param lon: The longitude
-    :return: A new dataset, with all variables interpolated to the specified location
+    :return: New dataset with all variables interpolated to the specified location
     """
     lat_rho = dset.lat_rho.values
     lon_rho = dset.lon_rho.values
@@ -152,11 +152,11 @@ def interpolate_latlon(dset, lat, lon):
     return dset
 
 
-def compute_azimuthal_vel(dset, az):
+def compute_azimuthal_vel(dset: xr.Dataset, az) -> xr.DataArray:
     """
     Compute directional current velocity
 
-    :param dset: An xarray.Dataset object
+    :param dset: ROMS dataset
     :param az: The direction in which to measure the current
     :return: An xarray.DataArray representing the current velocity
     """

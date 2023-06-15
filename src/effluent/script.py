@@ -12,8 +12,6 @@ def run(conf):
     :func:`run <effluent.model.Model.run>` method of that object.
 
     :param conf: :doc:`Configuration parameters </config>` (dict object or file name).
-
-    :return: Name of output file
     """
 
     init_logger()
@@ -21,8 +19,6 @@ def run(conf):
     from .model import Model
     model = Model.from_config(conf)
     model.run()
-
-    return model.output.file
 
 
 def main():
