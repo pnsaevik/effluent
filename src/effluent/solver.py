@@ -4,8 +4,9 @@ numerical integration of the differential equations described in :doc:`/algorith
 """
 
 import numpy as np
-from scipy.integrate import solve_ivp
+import scipy.integrate
 import effluent.io
+import xarray as xr
 
 
 class Solver:
@@ -159,7 +160,8 @@ class Solver:
         event.terminal = True
         event.direction = -1
 
-        result = solve_ivp(
+        # noinspection PyUnresolvedReferences
+        result = scipy.integrate.solve_ivp(
             fun=self.odefunc,
             t_span=steps[[0, -1]],
             y0=self._initial_conditions(),
@@ -182,7 +184,6 @@ class Solver:
             res_y = np.concatenate([res_y, evt_y[0].T], axis=1)
 
         # Organize result
-        import xarray as xr
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 

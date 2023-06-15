@@ -8,6 +8,8 @@ import logging
 import tomli as toml
 import effluent.io
 import effluent.solver
+import effluent.io
+import effluent.solver
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +54,13 @@ class Model:
         :param fname_or_dict: Config dict or name of config file
         :return: An initialized object.
         """
-        from effluent.io import Pipe, Ambient, Output
-        from effluent.solver import Solver
-
         conf = load_config(fname_or_dict)
 
         m = Model()
-        m.pipe = Pipe.from_config(conf['pipe'])
-        m.ambient = Ambient.from_config(conf['ambient'])
-        m.output = Output.from_config(conf['output'])
-        m.solver = Solver(**conf['solver'])
+        m.pipe = effluent.io.Pipe.from_config(conf['pipe'])
+        m.ambient = effluent.io.Ambient.from_config(conf['ambient'])
+        m.output = effluent.io.Output.from_config(conf['output'])
+        m.solver = effluent.solver.Solver(**conf['solver'])
 
         for key in ['start', 'stop', 'step']:
             if key in conf['timestepper']:

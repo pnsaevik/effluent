@@ -4,6 +4,12 @@ The package contains functions and classes for reading and writing simulation da
 
 import abc
 import numpy as np
+import xarray as xr
+import pandas as pd
+import effluent.eos
+import netCDF4 as nc
+import uuid
+import effluent.roms
 
 
 class Pipe:
@@ -39,8 +45,6 @@ class Pipe:
 
     @staticmethod
     def from_nc_file(file):
-        import xarray as xr
-
         dset = xr.load_dataset(file)
         return Pipe.from_dataset(dset)
 
@@ -60,8 +64,6 @@ class Pipe:
 
     @staticmethod
     def from_dataframe(df):
-        import xarray as xr
-
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
@@ -69,16 +71,13 @@ class Pipe:
 
     @staticmethod
     def from_dataset(dset):
-        import xarray as xr
-
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
 
         # Compute density from temp and salt if not present
         if 'dens' not in dset:
-            from . import eos
-            dens = eos.roms_rho(
+            dens = effluent.eos.roms_rho(
                 temp=dset['temp'].values,
                 salt=dset['salt'].values,
                 depth=dset['depth'].values,
@@ -88,8 +87,6 @@ class Pipe:
 
     @staticmethod
     def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
-        import pandas as pd
-
         data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
         if salt is not None:
             data['salt'] = salt
@@ -124,8 +121,6 @@ def read_csv(file):
     :param file: File name
     :return: A pandas.DataFrame object
     """
-    import pandas as pd
-
     return pd.read_csv(
         file,
         sep=',',
@@ -176,15 +171,11 @@ class Ambient:
 
     @staticmethod
     def from_nc_file(file):
-        import xarray as xr
-
         dset = xr.load_dataset(file)
         return Ambient.from_dataset(dset)
 
     @staticmethod
     def from_dataframe(df):
-        import xarray as xr
-
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index(['time', 'depth'])
 
@@ -199,10 +190,7 @@ class Ambient:
 
         # Compute density from temp and salt if not present
         if 'dens' not in dset:
-            import xarray as xr
-
-            from . import eos
-            data = eos.roms_rho(
+            data = effluent.eos.roms_rho(
                 temp=dset['temp'].values,
                 salt=dset['salt'].values,
                 depth=dset['depth'].values,
@@ -218,7 +206,6 @@ class Ambient:
 
     @staticmethod
     def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
-        import xarray as xr
         shp = (len(time), len(depth))
 
         variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
@@ -397,8 +384,6 @@ class OutputNC(Output):
     """
 
     def __init__(self, file, variables):
-        import xarray as xr
-
         self.variables = variables
         self.dset = None
         self._blank_file = True
@@ -410,8 +395,7 @@ class OutputNC(Output):
 
         elif isinstance(file, xr.Dataset):
             # Diskless mode: Data is written to memory, and to an xarray.Dataset on exit
-            from uuid import uuid4
-            self.fname = uuid4()
+            self.fname = uuid.uuid4()
             self.diskless = True
             self.xr_dset = file
 
@@ -427,7 +411,6 @@ class OutputNC(Output):
 
     def open(self):
         if self.dset is None:
-            import netCDF4 as nc
             self.dset = nc.Dataset(filename=self.fname, mode='w', diskless=self.diskless)
             self._blank_file = True
 
@@ -541,7 +524,6 @@ def write_nc_to_xr(nc_dset, xr_dset):
     :param xr_dset: An xarray.Dataset object
     :param nc_dset: A netCDF4.Dataset object
     """
-    import xarray as xr
 
     # Write variables
     for name, nc_var in nc_dset.variables.items():
@@ -620,7 +602,6 @@ class AmbientRoms(Ambient):
 
     def open(self):
         if self.dset is None:
-            import effluent.roms
             dset = effluent.roms.open_location(
                 file=self.file,
                 lat=self.latitude,

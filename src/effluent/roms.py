@@ -4,6 +4,9 @@ The module contains functions for working with ROMS datasets
 
 import numpy as np
 import glob
+import xarray as xr
+import effluent.eos
+import effluent.numerics
 
 
 def open_location(file, lat, lon, az):
@@ -48,8 +51,6 @@ def open_dataset(file, z_rho=False, dens=False):
     :param dens: True if density should be added (implies z_rho, default: False)
     :return: An xarray.Dataset object
     """
-    import xarray as xr
-
     fnames = sorted(glob.glob(file))
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
@@ -110,8 +111,7 @@ def add_dens(dset):
     :param dset: An xarray.Dataset object representing a ROMS dataset
     :return: A new dataset with ``dens`` added
     """
-    from effluent.eos import roms_rho
-    dens = roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+    dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     return dset.assign_coords(dens=dens)
 
 
@@ -128,12 +128,10 @@ def interpolate_latlon(dset, lat, lon):
     :param lon: The longitude
     :return: A new dataset, with all variables interpolated to the specified location
     """
-    from .numerics import bilin_inv
-
     lat_rho = dset.lat_rho.values
     lon_rho = dset.lon_rho.values
 
-    y, x = bilin_inv(lat, lon, lat_rho, lon_rho)
+    y, x = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
 
     x_min = 0.5
     y_min = 0.5
