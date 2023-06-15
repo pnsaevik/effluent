@@ -34,9 +34,9 @@ function for visualization purposes.
     # Use built-in function to interpolate ROMS data
     roms_spec = effluent.roms.open_location(
         file="forcing.nc",
-        latitude=59.03,
-        longitude=5.68,
-        azimuth=45,
+        lat=59.03,
+        lon=5.68,
+        az=45,
     )
 
     # Load roms data
