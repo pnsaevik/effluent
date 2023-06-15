@@ -61,6 +61,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'autoapi.extension',
     'matplotlib.sphinxext.plot_directive',
 ]
@@ -111,3 +112,10 @@ autoapi_options = [
     'show-module-summary',
     'imported-members',
 ]
+
+
+# -- Options for intersphinx ------------------------
+
+intersphinx_mapping = {
+    'xarray': ('http://xarray.pydata.org/en/stable/', None),
+}
