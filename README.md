@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/pnsaevik/effluent.svg?style=shield)](https://circleci.com/gh/pnsaevik/effluent)
+
 # effluent
 
 Effluent is a python package for simulating the dispersion of effluent
