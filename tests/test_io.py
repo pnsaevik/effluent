@@ -300,13 +300,13 @@ class Test_Output_from_config:
             out.write(time=1, result=result)
             txt = buf.getvalue()
 
-        assert txt == dedent("""
-            release_time,t,x,y,z,u,v,w,density,radius
-            0,1000,1,3,5,7,9,2,4,6
-            0,2000,2,4,6,8,1,3,5,7
-            1,1000,1,3,5,7,9,2,4,6
-            1,2000,2,4,6,8,1,3,5,7
-         """)[1:]
+        assert txt.replace('\r', '') == (
+            "release_time,t,x,y,z,u,v,w,density,radius\n"
+            "0,1000,1,3,5,7,9,2,4,6\n"
+            "0,2000,2,4,6,8,1,3,5,7\n"
+            "1,1000,1,3,5,7,9,2,4,6\n"
+            "1,2000,2,4,6,8,1,3,5,7\n"
+        )
 
     def test_option_nc_file(self, result):
         buf = xr.Dataset()
@@ -352,4 +352,4 @@ class Test_Output_from_config:
             buf.seek(0)
             first_line = buf.readline()
 
-        assert first_line == "release_time,x,z,y\n"
+        assert first_line.replace('\r', '') == "release_time,x,z,y\n"
