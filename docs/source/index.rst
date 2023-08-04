@@ -59,13 +59,8 @@ or from within python as
 
 In both cases, simulation details are specified in the
 file ``config.toml``, written in the `TOML file format <https://toml.io/en/>`_.
-A samle config file is shown below:
-
-.. literalinclude:: examples/jet/config.toml
-    :language: toml
-
-Other input and output formats are also available. See the rest of the
-documentation for details.
+The :ref:`examples_page` section includes many examples of valid config files,
+for various types of problems.
 
 
 Documentation
