@@ -29,7 +29,9 @@ The software is invoked as a command line script:
     effluent config.toml
 
 where `config.toml` is the configuration file specifying the simulation
-setup.
+setup. Examples of valid configuration files are given in the repository
+directory `docs/source/examples`, and in the
+[online documentation](https://effluent.readthedocs.io/en/latest/).
 
 
 # Documentation
