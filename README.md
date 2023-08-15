@@ -45,4 +45,4 @@ detailed description of the algorithm and software features.
 
 Use the GitHub issue tracking system to report problems with the software, seek
 support, or suggest improvements. Code contributions can be suggested using
-GitHub pull requests.
+GitHub pull requests. Check documentation for details.
