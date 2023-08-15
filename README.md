@@ -39,3 +39,10 @@ directory `docs/source/examples`, and in the
 Check out the
 [online documentation](https://effluent.readthedocs.io/en/latest/) for a
 detailed description of the algorithm and software features.
+
+
+# How to contribute
+
+Use the GitHub issue tracking system to report problems with the software, seek
+support, or suggest improvements. Code contributions can be suggested using
+GitHub pull requests.
