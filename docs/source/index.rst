@@ -72,3 +72,5 @@ Documentation
     config
     examples
     autoapi/index
+    contributing
+    credits
