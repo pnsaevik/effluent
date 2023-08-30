@@ -42,11 +42,17 @@ open-source ocean model ROMS [@Shchepetkin2005].
 
 There already exists multiple closed-source applications for modelling outfall
 dispersion, such as CORMIX [@Jirka2004], VISUAL PLUMES [@Frick2004]
-or VISJET [@Lee2003]. These are well-suited for governmental and industrial
-applications. In research, however, it is desirable to have an open-source,
-transparent implementation which can also be adapted and tailored to the
-specific needs of a research project. The package `effluent` provides this,
-along with a detailed online documentation with usage examples.
+or VISJET [@Lee2003]. A thorough comparison between these models has been done
+by Palomar et al. [@Palomar2012]. Since `effluent` has the same theoretical
+foundation as VISJET, the capabilities of the two models are similar. The main
+difference is that `effluent` does not contain any internal visualization
+capabilities, and results must be visualized using external packages. On the
+other hand, `effluent` is easier to incorporate into a scripting environment
+as its input and output formats are standardized and well documented. In
+addition, `effluent` allows ambient co- and crossflow currents to vary in both
+time and depth. This makes it possible to combine with modelled ambient
+current data. Being open source, `effluent` also allows users to fork and
+modify the program source code to suit specific needs.
 
 # Acknowledgements
 
