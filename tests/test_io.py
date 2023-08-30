@@ -75,8 +75,11 @@ class Test_append_xr_to_nc:
             dset.createDimension('y', None)
             dset.createVariable('a', 'i4', ('y', 'x'))
             dset.createVariable('b', 'i4', 'x')
+            dset.createVariable('t', 'i8', 'y')
+            dset.variables['t'].units = 'seconds since 1970-01-01'
             dset.variables['a'][:2, :] = 0
             dset.variables['b'][:] = 1
+            dset.variables['t'][:2] = -1
             yield dset
 
     def test_appends_variable_data_to_dataset_if_unlim_dims(self, nc_dset):
@@ -99,6 +102,12 @@ class Test_append_xr_to_nc:
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
         effluent.io.append_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
+
+    def test_writes_datetimes_as_seconds_since_epoch(self, nc_dset):
+        datetimes = np.array(['1970-01-01', '1970-01-01T01']).astype('datetime64')
+        xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('y', datetimes)))
+        effluent.io.append_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.variables['t'][:].tolist() == [-1, -1, 0, 3600]
 
 
 class Test_Pipe_from_config:

@@ -579,7 +579,9 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Append data
     for name in unlim_vars:
-        xr_var = xr_dset[name]
+        xr_var = xr_dset.variables[name]
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var)
         nc_var = nc_dset.variables[name]
         nc_var[num_old_items:num_items] = xr_var.values
 
