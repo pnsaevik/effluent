@@ -15,12 +15,12 @@ any convenience plotting or statistics functionality. It is expected that
 these analyses are conducted in post-processing stages using other packages.
 
 
-## Installation
+# Installation
 
 The package is installed using pip:
 
     pip install effluent
-  
+
 
 # Usage
 

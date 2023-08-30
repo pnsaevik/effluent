@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Included dask as an explicit dependency
+- Netcdf output no longer fails due to datetime conversion
 
 ## [1.2] - 2023-04-14
 ### Added

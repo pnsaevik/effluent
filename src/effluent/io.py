@@ -10,6 +10,7 @@ import effluent.eos
 import netCDF4 as nc
 import uuid
 import effluent.roms
+import cftime
 
 
 class Pipe:
@@ -487,6 +488,28 @@ class OutputNC(Output):
         r.coords['release_time'].attrs['units'] = 's'
 
 
+def convert_to_nc_date(
+        xr_var: xr.Variable, units: str = 'seconds since 1970-01-01',
+        calendar: str = 'proleptic_gregorian', dtype='i8',
+) -> xr.Variable:
+    """
+    Convert an xarray date variable to a CF-style date variable
+
+    On default, the xarray date will be converted to seconds (int64) since the unix epoch
+    (1970-01-01) using the proleptic gregorian calendar.
+
+    :param xr_var: Input variable, with values of type numpy.datetime64
+    :param units: Output units, as defined by CF conventions
+    :param calendar: Output calendar, as defined by CF conventions
+    :param dtype: Output data type, as defined by numpy conventions
+    :return: Output variable, with values converted to seconds since epoch
+    """
+    dates = xr_var.values.astype('datetime64[us]').tolist()
+    cf_dates = cftime.date2num(dates=dates, units=units, calendar=calendar).astype(dtype)
+    new_attrs = {**xr_var.attrs, **dict(units=units, calendar=calendar)}
+    return xr.Variable(dims=xr_var.dims, data=cf_dates, attrs=new_attrs)
+
+
 def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     """
     Write data from an xarray.Dataset to a netCDF4.Dataset
@@ -504,6 +527,9 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Write variables
     for name, xr_var in xr_dset.variables.items():
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var)
+
         nc_var = nc_dset.createVariable(
             varname=name,
             datatype=xr_var.dtype,
@@ -559,7 +585,10 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Append data
     for name in unlim_vars:
-        xr_var = xr_dset[name]
+        xr_var = xr_dset.variables[name]
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var, units=nc_dset[name].units,
+                                        calendar=nc_dset[name].calendar)
         nc_var = nc_dset.variables[name]
         nc_var[num_old_items:num_items] = xr_var.values
 

@@ -118,12 +118,7 @@ We can visualize the same data in a 3D plot:
     fig.tight_layout()
 
 
-After running *effluent*, the contents of the output file ``out.csv`` is
-
-.. literalinclude:: out.csv
-
-|
-
+After running *effluent*, the output is written to the netCDF file ``out.nc``.
 We plot the centerline of the plume in a 3D plot
 
 .. plot::
@@ -131,11 +126,12 @@ We plot the centerline of the plume in a 3D plot
     :include-source:
 
     # Load output data
+    import xarray as xr
     import pandas as pd
-    df = pd.read_csv('out.csv')
-    x = df.x.values
-    y = df.y.values
-    z = df.z.values
+    dset = xr.load_dataset('out.nc')
+    x = dset.x.isel(release_time=0).values
+    y = dset.y.isel(release_time=0).values
+    z = dset.z.isel(release_time=0).values
 
     # Plot stop position
     fig = plt.figure()
