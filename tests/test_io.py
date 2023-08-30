@@ -56,6 +56,15 @@ class Test_write_xr_to_nc:
         effluent.io.write_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset.dimensions['x'].isunlimited()
 
+    def test_writes_datetimes_as_seconds_since_epoch(self, nc_dset):
+        datetimes = np.array(['1970-01-01', '1970-01-01T01']).astype('datetime64')
+        xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('t', datetimes)))
+
+        effluent.io.write_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.variables['t'].units == 'seconds since 1970-01-01'
+        assert nc_dset.variables['t'][:].tolist() == [0, 3600]
+        assert nc_dset.variables['t'].dtype == np.dtype('i8')
+
 
 class Test_append_xr_to_nc:
     @pytest.fixture()

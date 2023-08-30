@@ -487,6 +487,23 @@ class OutputNC(Output):
         r.coords['release_time'].attrs['units'] = 's'
 
 
+def convert_to_nc_date(xr_var: xr.Variable) -> xr.Variable:
+    """
+    Convert an xarray date variable to a CF-style date variable
+
+    The xarray date will be converted to seconds (int64) since the unix epoch
+    (1970-01-01).
+
+    :param xr_var: Input variable, with values of type numpy.datetime64
+    :return: Output variable, with values converted to seconds since epoch
+    """
+    times = xr_var.values.astype('datetime64[s]')
+    epoch = np.datetime64('1970-01-01')
+    timediff = (times - epoch).astype('int64')
+    new_attrs = {**xr_var.attrs, **dict(units='seconds since 1970-01-01')}
+    return xr.Variable(dims=xr_var.dims, data=timediff, attrs=new_attrs)
+
+
 def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     """
     Write data from an xarray.Dataset to a netCDF4.Dataset
@@ -504,6 +521,9 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Write variables
     for name, xr_var in xr_dset.variables.items():
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var)
+
         nc_var = nc_dset.createVariable(
             varname=name,
             datatype=xr_var.dtype,
