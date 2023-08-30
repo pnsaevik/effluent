@@ -77,6 +77,7 @@ class Test_append_xr_to_nc:
             dset.createVariable('b', 'i4', 'x')
             dset.createVariable('t', 'i8', 'y')
             dset.variables['t'].units = 'seconds since 1970-01-01'
+            dset.variables['t'].calendar = 'proleptic_gregorian'
             dset.variables['a'][:2, :] = 0
             dset.variables['b'][:] = 1
             dset.variables['t'][:2] = -1

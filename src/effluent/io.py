@@ -10,6 +10,7 @@ import effluent.eos
 import netCDF4 as nc
 import uuid
 import effluent.roms
+import cftime
 
 
 class Pipe:
@@ -497,11 +498,12 @@ def convert_to_nc_date(xr_var: xr.Variable) -> xr.Variable:
     :param xr_var: Input variable, with values of type numpy.datetime64
     :return: Output variable, with values converted to seconds since epoch
     """
-    times = xr_var.values.astype('datetime64[s]')
-    epoch = np.datetime64('1970-01-01')
-    timediff = (times - epoch).astype('int64')
-    new_attrs = {**xr_var.attrs, **dict(units='seconds since 1970-01-01')}
-    return xr.Variable(dims=xr_var.dims, data=timediff, attrs=new_attrs)
+    calendar = 'proleptic_gregorian'
+    units = 'seconds since 1970-01-01'
+    dates = xr_var.values.astype('datetime64[us]').tolist()
+    cf_dates = cftime.date2num(dates=dates, units=units, calendar=calendar)
+    new_attrs = {**xr_var.attrs, **dict(units=units, calendar=calendar)}
+    return xr.Variable(dims=xr_var.dims, data=cf_dates, attrs=new_attrs)
 
 
 def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
