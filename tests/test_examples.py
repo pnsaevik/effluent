@@ -20,9 +20,15 @@ class Example:
         conf_fname = self.path / 'config.toml'
         with open(conf_fname, 'br') as fp:
             conf = tomli.load(fp)
-        expected_fname = conf['output']['csv']['file']
-        result_fname = 'result.csv'
-        conf['output']['csv']['file'] = result_fname
+
+        if 'csv' in conf['output']:
+            output_type = 'csv'
+        else:
+            output_type = 'nc'
+
+        expected_fname = conf['output'][output_type]['file']
+        result_fname = 'result.' + output_type
+        conf['output'][output_type]['file'] = result_fname
 
         # Run simulation
         effluent.run(conf)

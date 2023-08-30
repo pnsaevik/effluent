@@ -118,7 +118,7 @@ We can visualize the same data in a 3D plot:
     fig.tight_layout()
 
 
-After running *effluent*, the contents of the output file ``out.csv`` is
+After running *effluent*, the output is written to the netCDF file ``out.nc``
 
 .. literalinclude:: out.csv
 
