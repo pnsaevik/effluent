@@ -5,7 +5,6 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 import xarray as xr
-from textwrap import dedent
 
 import effluent.io
 
@@ -61,8 +60,8 @@ class Test_write_xr_to_nc:
         xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('t', datetimes)))
 
         effluent.io.write_xr_to_nc(xr_dset, nc_dset)
-        assert nc_dset.variables['t'].units == 'seconds since 1970-01-01'
         assert nc_dset.variables['t'][:].tolist() == [0, 3600]
+        assert nc_dset.variables['t'].units == 'seconds since 1970-01-01'
         assert nc_dset.variables['t'].dtype == np.dtype('i8')
 
 
@@ -76,7 +75,7 @@ class Test_append_xr_to_nc:
             dset.createVariable('a', 'i4', ('y', 'x'))
             dset.createVariable('b', 'i4', 'x')
             dset.createVariable('t', 'i8', 'y')
-            dset.variables['t'].units = 'seconds since 1970-01-01'
+            dset.variables['t'].units = 'hours since 1970-01-01'
             dset.variables['t'].calendar = 'proleptic_gregorian'
             dset.variables['a'][:2, :] = 0
             dset.variables['b'][:] = 1
@@ -104,11 +103,11 @@ class Test_append_xr_to_nc:
         effluent.io.append_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
 
-    def test_writes_datetimes_as_seconds_since_epoch(self, nc_dset):
-        datetimes = np.array(['1970-01-01', '1970-01-01T01']).astype('datetime64')
+    def test_writes_datetimes_using_preexisting_units(self, nc_dset):
+        datetimes = np.array(['1970-01-01', '1970-01-01T05']).astype('datetime64')
         xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('y', datetimes)))
         effluent.io.append_xr_to_nc(xr_dset, nc_dset)
-        assert nc_dset.variables['t'][:].tolist() == [-1, -1, 0, 3600]
+        assert nc_dset.variables['t'][:].tolist() == [-1, -1, 0, 5]
 
 
 class Test_Pipe_from_config:
