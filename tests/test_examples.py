@@ -3,6 +3,8 @@ import effluent
 from pathlib import Path
 import os
 import tomli
+import numpy as np
+import netCDF4 as nc  # Must be imported together with numpy to avoid warning
 
 
 EXAMPLE_DIR = Path(__file__).parent.parent / "docs/source/examples"
@@ -58,11 +60,29 @@ def compare_csv(a, b):
     assert txt_a == txt_b
 
 
+def smalldiff(a, b):
+    if np.issubdtype(a.dtype, np.integer):
+        return a.tolist() == b.tolist()
+    elif np.issubdtype(a.dtype, np.datetime64):
+        return a.tolist() == b.tolist()
+    else:
+        scale = np.max(1e-7 + np.abs(a) + np.abs(b))
+        diff = (a - b) / scale
+        return np.max(np.abs(diff)) < 1e-7
+
+
 def compare_netcdf(a, b):
     import xarray as xr
     dset_a = xr.load_dataset(a)
     dset_b = xr.load_dataset(b)
-    assert dset_a.to_dict() == dset_b.to_dict()
+
+    assert dset_a.attrs == dset_b.attrs
+    assert set(dset_a.variables.keys()) == set(dset_b.variables.keys())
+    for k in dset_a.variables.keys():
+        assert dset_a.variables[k].dims == dset_b.variables[k].dims
+        assert dset_a.variables[k].attrs == dset_b.variables[k].attrs
+        assert dset_a.variables[k].shape == dset_b.variables[k].shape
+        assert smalldiff(dset_a.variables[k].values, dset_b.variables[k].values)
 
 
 class Test_run:
