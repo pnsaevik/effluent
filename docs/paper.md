@@ -172,5 +172,38 @@ references:
   type: article-journal
   URL: https://linkinghub.elsevier.com/retrieve/pii/S1463500304000484
   volume: '9'
+  
+- id: Palomar2012
+  accessed:
+    - year: 2023
+      month: 9
+      day: 6
+  author:
+    - family: Palomar
+      given: P.
+    - family: Lara
+      given: J. L.
+    - family: Losada
+      given: I. J.
+    - family: Rodrigo
+      given: M.
+    - family: Alvárez
+      given: A.
+  citation-key: Palomar2012
+  container-title: Desalination
+  container-title-short: Desalination
+  DOI: 10.1016/j.desal.2011.11.037
+  ISSN: 0011-9164
+  issued:
+    - year: 2012
+      month: 3
+      day: 30
+  page: 14-27
+  source: ScienceDirect
+  title: 'Near field brine discharge modelling part 1: Analysis of commercial tools'
+  title-short: Near field brine discharge modelling part 1
+  type: article-journal
+  URL: https://www.sciencedirect.com/science/article/pii/S0011916411009702
+  volume: '290'
 ...
 
