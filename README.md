@@ -17,9 +17,15 @@ these analyses are conducted in post-processing stages using other packages.
 
 # Installation
 
-The package is installed using pip:
+The package can be installed using pip:
 
     pip install effluent
+
+Alternatively, a [conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#) 
+file (`environment.yml`) is included that creates an isolated python environment for Effluent.
+The environment can be created by:
+
+    conda env create -f environment.yml
 
 
 # Usage
