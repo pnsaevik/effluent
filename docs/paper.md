@@ -33,6 +33,8 @@ dilution process may help discover this type of problems before they appear,
 and can guide the design of an outfall system to minimize environmental
 impact.
 
+![Wastewater dilution and rise, as computed by the package](paper-figure.png){ width=80% }
+
 # Statement of need
 
 `effluent` is an open-source python package for simulating the dispersion of
@@ -41,10 +43,23 @@ effluent discharges from wastewater pipes. The underlying model is based on
 open-source ocean model ROMS [@Shchepetkin2005].
 
 There already exists multiple closed-source applications for modelling outfall
-dispersion, such as CORMIX [@Jirka2004], VISUAL PLUMES [@Frick2004]
-or VISJET [@Lee2003]. A thorough comparison between these models has been done
-by Palomar et al. [@Palomar2012]. Since `effluent` has the same theoretical
-foundation as VISJET, the capabilities of the two models are similar. The main
+dispersion, such as Cormix [@Jirka2004], Visual Plumes [@Frick2004]
+or Visjet [@Lee2003]. A thorough comparison between these models has been done
+by Palomar et al. [@Palomar2012]. The model equations in Cormix is based on
+interpolating between different asymptotic regimes, while Visual Plumes and
+Visjet use an entrainment hypothesis to model the expansion of the jet. Cormix
+and Visual Plumes use the Eulerian approach to derive and solve the model
+differential equations, while VisJet uses the Lagrangian approach where the
+computational grid follows the movement of the jet.
+
+For the development of `effluent`, it was important to choose an underlying
+model which was flexible and easy to extend to more complex scenarios, such as
+coupling with a regional ocean model. It was decided that the entrainment
+hypothesis approach and the Lagrangian solution method would be best suited,
+i.e., the Visjet model. 
+
+Since `effluent` has the same theoretical foundation as Visjet, the
+capabilities of the two models are similar. The main
 difference is that `effluent` does not contain any internal visualization
 capabilities, and results must be visualized using external packages. On the
 other hand, `effluent` is easier to incorporate into a scripting environment
@@ -172,5 +187,38 @@ references:
   type: article-journal
   URL: https://linkinghub.elsevier.com/retrieve/pii/S1463500304000484
   volume: '9'
+  
+- id: Palomar2012
+  accessed:
+    - year: 2023
+      month: 9
+      day: 6
+  author:
+    - family: Palomar
+      given: P.
+    - family: Lara
+      given: J. L.
+    - family: Losada
+      given: I. J.
+    - family: Rodrigo
+      given: M.
+    - family: Alvárez
+      given: A.
+  citation-key: Palomar2012
+  container-title: Desalination
+  container-title-short: Desalination
+  DOI: 10.1016/j.desal.2011.11.037
+  ISSN: 0011-9164
+  issued:
+    - year: 2012
+      month: 3
+      day: 30
+  page: 14-27
+  source: ScienceDirect
+  title: 'Near field brine discharge modelling part 1: Analysis of commercial tools'
+  title-short: Near field brine discharge modelling part 1
+  type: article-journal
+  URL: https://www.sciencedirect.com/science/article/pii/S0011916411009702
+  volume: '290'
 ...
 
