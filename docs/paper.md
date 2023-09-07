@@ -33,7 +33,7 @@ dilution process may help discover this type of problems before they appear,
 and can guide the design of an outfall system to minimize environmental
 impact.
 
-![Wastewater dilution and rise, as computed by the package](paper-figure.png){ width=50% }
+![Wastewater dilution and rise, as computed by the package](paper-figure.png){ width=80% }
 
 # Statement of need
 
