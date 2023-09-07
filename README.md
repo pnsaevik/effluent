@@ -21,6 +21,11 @@ The package is installed using pip:
 
     pip install effluent
 
+Alternatively, the package can be installed to an isolated conda environment
+using the in-repo file `environment.yml` as follows:
+
+    conda env create -f environment.yml 
+
 
 # Usage
 
