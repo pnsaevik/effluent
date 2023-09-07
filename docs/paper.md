@@ -43,10 +43,23 @@ effluent discharges from wastewater pipes. The underlying model is based on
 open-source ocean model ROMS [@Shchepetkin2005].
 
 There already exists multiple closed-source applications for modelling outfall
-dispersion, such as CORMIX [@Jirka2004], VISUAL PLUMES [@Frick2004]
-or VISJET [@Lee2003]. A thorough comparison between these models has been done
-by Palomar et al. [@Palomar2012]. Since `effluent` has the same theoretical
-foundation as VISJET, the capabilities of the two models are similar. The main
+dispersion, such as Cormix [@Jirka2004], Visual Plumes [@Frick2004]
+or Visjet [@Lee2003]. A thorough comparison between these models has been done
+by Palomar et al. [@Palomar2012]. The model equations in Cormix is based on
+interpolating between different asymptotic regimes, while Visual Plumes and
+Visjet use an entrainment hypothesis to model the expansion of the jet. Cormix
+and Visual Plumes use the Eulerian approach to derive and solve the model
+differential equations, while VisJet uses the Lagrangian approach where the
+computational grid follows the movement of the jet.
+
+For the development of `effluent`, it was important to choose an underlying
+model which was flexible and easy to extend to more complex scenarios, such as
+coupling with a regional ocean model. It was decided that the entrainment
+hypothesis approach and the Lagrangian solution method would be best suited,
+i.e., the Visjet model. 
+
+Since `effluent` has the same theoretical foundation as Visjet, the
+capabilities of the two models are similar. The main
 difference is that `effluent` does not contain any internal visualization
 capabilities, and results must be visualized using external packages. On the
 other hand, `effluent` is easier to incorporate into a scripting environment
