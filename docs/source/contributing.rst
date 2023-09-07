@@ -50,11 +50,10 @@ is of course very welcome. In this case, the preferred approach is as follows:
 4.  Use ``conda`` or ``virtualenv`` to create an isolated development
     environment. For instance, assuming that ``conda`` is installed, use::
 
-     $ conda create -n effluent python xarray netcdf4 holoviews scipy dask
-     $ conda activate effluent
      $ cd name_of_dev_dir
-     $ pip install pytest
-     $ pip install -e .
+     $ conda env create -f environment.yml
+     $ conda activate effluent
+     $ pip install -e .[dev]
 
 5.  Use ``pytest`` to create one or more (failing) tests that demonstrate the
     bug/feature. Make local changes to the code until the test passes. Running
