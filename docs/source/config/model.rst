@@ -6,8 +6,6 @@ Model parameters describe different aspects of the
 plume model. All of these parameters have default values which are used
 unless specified otherwise.
 
-|
-
 .. confval:: model.beta_n
 
     :type: number
@@ -17,8 +15,6 @@ unless specified otherwise.
     coefficient is specified relative to the top-hat radius of the jet.
 
     The default value is from |lee2003|_.
-
-|
 
 .. confval:: model.beta_t
 
@@ -30,8 +26,6 @@ unless specified otherwise.
 
     The default value is from |lee2003|_.
 
-|
-
 .. confval:: model.mass_n
 
     :type: number
@@ -40,8 +34,6 @@ unless specified otherwise.
     Added mass coefficient when gravity acts orthogonal to the jet direction.
 
     The default value is from |lee2003|_.
-
-|
 
 .. confval:: model.mass_t
 
@@ -52,6 +44,7 @@ unless specified otherwise.
 
     The default value is from |lee2003|_.
 
+|
 
 Bibliography
 ===================

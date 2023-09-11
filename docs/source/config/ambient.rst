@@ -12,8 +12,6 @@ It is required to supply either a complete set of explicit parameters
 external file containing the parameters (:confval:`ambient.csv.file`,
 :confval:`ambient.nc.file` or :confval:`ambient.roms.file`).
 
-|
-
 .. confval:: ambient.time
 
     :type: array
@@ -21,16 +19,12 @@ external file containing the parameters (:confval:`ambient.csv.file`,
 
     Time and date associated with the pipe data.
 
-|
-
 .. confval:: ambient.depth
 
     :type: array
     :units: m
 
     Depth below sea surface.
-
-|
 
 .. confval:: ambient.coflow
 
@@ -42,8 +36,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     There should be one array for each :confval:`ambient.time` value. Each
     array should have the same number of elements as :confval:`ambient.depth`.
 
-|
-
 .. confval:: ambient.crossflow
 
     :type: array of arrays
@@ -54,8 +46,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     right.
     There should be one array for each :confval:`ambient.time` value. Each
     array should have the same number of elements as :confval:`ambient.depth`.
-
-|
 
 .. confval:: ambient.dens
 
@@ -69,8 +59,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     :confval:`ambient.salt`, in which case the density is computed using the
     UNESCO seawater equation of state |jackett1995|_.
 
-|
-
 .. confval:: ambient.salt
 
     :type: array of arrays
@@ -81,8 +69,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     array should have the same number of elements as :confval:`ambient.depth`.
     Either supply both :confval:`ambient.temp` and :confval:`ambient.salt`,
     or provide values for :confval:`ambient.dens`.
-
-|
 
 .. confval:: ambient.temp
 
@@ -95,8 +81,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     Either supply both :confval:`ambient.temp` and :confval:`ambient.salt`,
     or provide values for :confval:`ambient.dens`.
 
-|
-
 .. confval:: ambient.csv.file
 
     :type: string
@@ -105,8 +89,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     one column (with header) for each ambient parameter. Columns must be
     comma-separated. Lines starting with ``#`` are treated as comments, and
     whitespace is ignored.
-
-|
 
 .. confval:: ambient.nc.file
 
@@ -117,8 +99,6 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     The file must have one variable for each pipe parameter. Each of the
     two-dimensional variables should have time as its first dimension and depth
     as its second dimension.
-
-|
 
 .. confval:: ambient.roms.file
 
@@ -137,23 +117,17 @@ external file containing the parameters (:confval:`ambient.csv.file`,
     Depth coordinates ``h``, ``Cs_r`` and vertical parameters ``hc``,
     ``Vtransform`` must also be present.
 
-|
-
 .. confval:: ambient.roms.latitude
 
     :type: number
 
     Latitude of the relevant data points from :confval:`ambient.roms.file`.
 
-|
-
 .. confval:: ambient.roms.longitude
 
     :type: number
 
     Longitude of the relevant data points from :confval:`ambient.roms.file`.
-
-|
 
 .. confval:: ambient.roms.azimuth
 

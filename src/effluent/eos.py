@@ -1,9 +1,27 @@
+"""
+Contains the implementation for the Equation of State
+"""
+
 import numpy as np
 
 
 def roms_rho(temp, salt, depth):
-    # Taken from the ROMS source file: rho_eos.F
-    # Bibliographic reference: https://doi.org/10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+    """
+    Computes water density from temperature, salinity and depth.
+
+    The algorithm is taken directly from the ROMS source file ``rho_eos.F``
+
+    David R. Jackett and Trevor J. Mcdougall (1995): |jackett1995|_.
+    Journal of Atmospheric and Oceanic Technology 12, no. 2: 381–89.
+
+    .. |jackett1995| replace:: Minimal Adjustment of Hydrographic Profiles to Achieve Static Stability
+    .. _jackett1995: https://doi.org/10.1175/1520-0426(1995)012<0381:MAOHPT>2.0.CO;2
+
+    :param temp: Temperature, in degrees Celcius
+    :param salt: Salinity, in PSU
+    :param depth: Depth, in meters
+    :return: Density, in kg/m3
+    """
 
     # Coefficients
     A00 = +1.909256e+04

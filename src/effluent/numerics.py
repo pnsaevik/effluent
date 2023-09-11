@@ -1,15 +1,26 @@
+"""
+The module contains numerical helper functions.
+"""
+
 import numpy as np
 
 
 def bilin_inv(f, g, F, G, maxiter=7, tol=1.0e-7):
-    """Inverse bilinear interpolation
+    """
+    Inverse bilinear interpolation
 
-    f, g : scalars or arrays of same shape
-    F, G : 2D arrays of the same shape
+    ``f, g`` should be scalars or arrays of same shape
 
-    returns x, y : shaped like f and g
-    such that F[x, y] = f and G[x, y] = g, when linearly interpolated
+    ``F, G`` should be 2D arrays of the same shape
 
+    :param f: Desired f value
+    :param g: Desired g value
+    :param F: Tabulated f values
+    :param G: Tabulated g values
+    :param maxiter: Maximum number of Newton iterations
+    :param tol: Maximum residual value
+    :return: A tuple ``(x, y)`` such that ``F[x, y] = f`` and ``G[x, y] = g``, when
+        linearly interpolated
     """
 
     imax, jmax = np.array(F.shape) - 1

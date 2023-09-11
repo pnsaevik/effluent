@@ -1,4 +1,3 @@
-import sys
-from . import run
+from .script import main
 
-run(*sys.argv[1:])
+main()

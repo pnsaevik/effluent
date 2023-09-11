@@ -8,8 +8,6 @@ They are passed directly to
 All of the parameters have default values which are used unless specified
 otherwise.
 
-|
-
 .. confval:: solver.method
 
     :type: string
@@ -17,8 +15,6 @@ otherwise.
 
     Integration method to use. Alternatives are "RK45", "RK23, "DOP853",
     "RADAU", "BDF" and "LSODA".
-
-|
 
 .. confval:: solver.rtol
 
@@ -28,8 +24,6 @@ otherwise.
     Relative tolerance. The solver keeps the local error estimates less than
     atol + rtol * abs(y).
 
-|
-
 .. confval:: solver.atol
 
     :type: number
@@ -38,16 +32,12 @@ otherwise.
     Absolute tolerance. The solver keeps the local error estimates less than
     atol + rtol * abs(y).
 
-|
-
 .. confval:: solver.first_step
 
     :type: number
     :default: 0
 
     Initial step size. Default is 0 which means that the algorithm should choose.
-
-|
 
 .. confval:: solver.max_step
 

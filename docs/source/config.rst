@@ -6,7 +6,7 @@ The software can be started from the command line as
 
 .. code-block::
 
-    python -m effluent config.toml
+    effluent config.toml
 
 or from within python as
 

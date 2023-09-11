@@ -5,7 +5,6 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 import xarray as xr
-from textwrap import dedent
 
 import effluent.io
 
@@ -56,6 +55,15 @@ class Test_write_xr_to_nc:
         effluent.io.write_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset.dimensions['x'].isunlimited()
 
+    def test_writes_datetimes_as_seconds_since_epoch(self, nc_dset):
+        datetimes = np.array(['1970-01-01', '1970-01-01T01']).astype('datetime64')
+        xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('t', datetimes)))
+
+        effluent.io.write_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.variables['t'][:].tolist() == [0, 3600]
+        assert nc_dset.variables['t'].units == 'seconds since 1970-01-01'
+        assert nc_dset.variables['t'].dtype == np.dtype('i8')
+
 
 class Test_append_xr_to_nc:
     @pytest.fixture()
@@ -66,8 +74,12 @@ class Test_append_xr_to_nc:
             dset.createDimension('y', None)
             dset.createVariable('a', 'i4', ('y', 'x'))
             dset.createVariable('b', 'i4', 'x')
+            dset.createVariable('t', 'i8', 'y')
+            dset.variables['t'].units = 'hours since 1970-01-01'
+            dset.variables['t'].calendar = 'proleptic_gregorian'
             dset.variables['a'][:2, :] = 0
             dset.variables['b'][:] = 1
+            dset.variables['t'][:2] = -1
             yield dset
 
     def test_appends_variable_data_to_dataset_if_unlim_dims(self, nc_dset):
@@ -90,6 +102,12 @@ class Test_append_xr_to_nc:
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
         effluent.io.append_xr_to_nc(xr_dset, nc_dset)
         assert nc_dset['b'][:].tolist() == [1, 1, 1, 1]
+
+    def test_writes_datetimes_using_preexisting_units(self, nc_dset):
+        datetimes = np.array(['1970-01-01', '1970-01-01T05']).astype('datetime64')
+        xr_dset = xr.Dataset(data_vars=dict(t=xr.Variable('y', datetimes)))
+        effluent.io.append_xr_to_nc(xr_dset, nc_dset)
+        assert nc_dset.variables['t'][:].tolist() == [-1, -1, 0, 5]
 
 
 class Test_Pipe_from_config:
@@ -300,13 +318,13 @@ class Test_Output_from_config:
             out.write(time=1, result=result)
             txt = buf.getvalue()
 
-        assert txt == dedent("""
-            release_time,t,x,y,z,u,v,w,density,radius
-            0,1000,1,3,5,7,9,2,4,6
-            0,2000,2,4,6,8,1,3,5,7
-            1,1000,1,3,5,7,9,2,4,6
-            1,2000,2,4,6,8,1,3,5,7
-         """)[1:]
+        assert txt.replace('\r', '') == (
+            "release_time,t,x,y,z,u,v,w,density,radius\n"
+            "0,1000,1,3,5,7,9,2,4,6\n"
+            "0,2000,2,4,6,8,1,3,5,7\n"
+            "1,1000,1,3,5,7,9,2,4,6\n"
+            "1,2000,2,4,6,8,1,3,5,7\n"
+        )
 
     def test_option_nc_file(self, result):
         buf = xr.Dataset()
@@ -352,4 +370,4 @@ class Test_Output_from_config:
             buf.seek(0)
             first_line = buf.readline()
 
-        assert first_line == "release_time,x,z,y\n"
+        assert first_line.replace('\r', '') == "release_time,x,z,y\n"

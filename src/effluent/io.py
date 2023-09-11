@@ -1,19 +1,42 @@
-import abc
+"""
+The package contains functions and classes for reading and writing simulation data.
+"""
 
-import netCDF4 as nc
+import abc
 import numpy as np
-import pandas as pd
 import xarray as xr
+import pandas as pd
+import effluent.eos
+import netCDF4 as nc
+import uuid
+import effluent.roms
+import cftime
 
 
 class Pipe:
+    """
+    Data about the pipe and the effluent release.
+
+    The constructor takes an xarray.Dataset object as input. If the source data is
+    in the form of a data file, the factory method should be used instead.
+
+    :param dset: An xarray.Dataset object with variables ``depth``, ``u``,
+        ``w``, ``dens`` and ``diam``, all indexed by the coordinate ``time``.
+    """
+
     def __init__(self, dset):
         self._dset = dset
         self._time_min = dset.time[0].values
         self._time_max = dset.time[-1].values
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Pipe":
+        """
+        Initialize using :doc:`configuration parameters </config/pipe>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
         if 'csv' in conf:
             return Pipe.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
@@ -22,12 +45,12 @@ class Pipe:
             return Pipe.from_mapping(**conf)
 
     @staticmethod
-    def from_nc_file(file):
+    def from_nc_file(file) -> "Pipe":
         dset = xr.load_dataset(file)
         return Pipe.from_dataset(dset)
 
     @staticmethod
-    def from_csv_file(file):
+    def from_csv_file(file) -> "Pipe":
         df = read_csv(file)
         return Pipe.from_dataframe(df)
 
@@ -41,22 +64,21 @@ class Pipe:
         return u, w
 
     @staticmethod
-    def from_dataframe(df):
+    def from_dataframe(df) -> "Pipe":
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
 
     @staticmethod
-    def from_dataset(dset):
+    def from_dataset(dset) -> "Pipe":
         u, w = Pipe._compute_uw(dset.flow.values, dset.decline.values, dset.diam.values)
         dset['u'] = xr.Variable('time', u)
         dset['w'] = xr.Variable('time', w)
 
         # Compute density from temp and salt if not present
         if 'dens' not in dset:
-            from . import eos
-            dens = eos.roms_rho(
+            dens = effluent.eos.roms_rho(
                 temp=dset['temp'].values,
                 salt=dset['salt'].values,
                 depth=dset['depth'].values,
@@ -65,7 +87,7 @@ class Pipe:
         return Pipe(dset)
 
     @staticmethod
-    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None):
+    def from_mapping(time, flow, decline, diam, depth, dens=None, salt=None, temp=None) -> "Pipe":
         data = dict(time=time, flow=flow, diam=diam, depth=depth, decline=decline)
         if salt is not None:
             data['salt'] = salt
@@ -76,7 +98,15 @@ class Pipe:
         df = pd.DataFrame(data)
         return Pipe.from_dataframe(df)
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
+        """
+        Interpolate pipe parameters to a specific point in time
+
+        :param time: A time in numpy.datetime64 format
+        :return: An xarray.Dataset object with variables ``depth``, ``u``, ``w``,
+            ``dens`` and ``diam``.
+        """
+
         if self._dset.dims['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
@@ -85,7 +115,13 @@ class Pipe:
         return self._dset.interp(time=clipped_time)
 
 
-def read_csv(file):
+def read_csv(file) -> pd.DataFrame:
+    """
+    Read csv file, and return a pandas.DataFrame
+
+    :param file: File name
+    :return: A pandas.DataFrame object
+    """
     return pd.read_csv(
         file,
         sep=',',
@@ -98,12 +134,34 @@ def read_csv(file):
 
 
 class Ambient:
+    """
+    Data about the ambient ocean.
+
+    This is an abstract base class with no explicit constructor. To initialize an
+    instance of the class, use the factory method.
+    """
+
     @abc.abstractmethod
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
+        """
+        Compute the ambient conditions at a specific time.
+
+        :param time: A numpy.datetime64 object
+        :return: An xarray.Dataset object with variables ``u``, ``v`` and ``dens``, all
+            indexed by the coordinate ``depth``.
+        """
+        # noinspection PyTypeChecker
         return NotImplementedError
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Ambient":
+        """
+        Initialize using :doc:`configuration parameters </config/ambient>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
+
         if 'csv' in conf:
             return Ambient.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
@@ -114,12 +172,12 @@ class Ambient:
             return Ambient.from_mapping(**conf)
 
     @staticmethod
-    def from_nc_file(file):
+    def from_nc_file(file) -> "Ambient":
         dset = xr.load_dataset(file)
         return Ambient.from_dataset(dset)
 
     @staticmethod
-    def from_dataframe(df):
+    def from_dataframe(df) -> "Ambient":
         df['time'] = df['time'].values.astype('datetime64')
         df = df.set_index(['time', 'depth'])
 
@@ -127,15 +185,14 @@ class Ambient:
         return Ambient.from_dataset(dset)
 
     @staticmethod
-    def from_dataset(dset):
+    def from_dataset(dset) -> "Ambient":
         dset = dset.rename_vars(coflow='u', crossflow='v')
         time = dset.time.values
         assert np.all(np.diff(time).astype('int64') > 0), "time values must be strictly increasing"
 
         # Compute density from temp and salt if not present
         if 'dens' not in dset:
-            from . import eos
-            data = eos.roms_rho(
+            data = effluent.eos.roms_rho(
                 temp=dset['temp'].values,
                 salt=dset['salt'].values,
                 depth=dset['depth'].values,
@@ -145,12 +202,12 @@ class Ambient:
         return AmbientXarray(dset)
 
     @staticmethod
-    def from_csv_file(file):
+    def from_csv_file(file) -> "Ambient":
         df = read_csv(file)
         return Ambient.from_dataframe(df)
 
     @staticmethod
-    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None):
+    def from_mapping(time, depth, coflow, crossflow, dens=None, salt=None, temp=None) -> "Ambient":
         shp = (len(time), len(depth))
 
         variables = dict(coflow=coflow, crossflow=crossflow, dens=dens, salt=salt,
@@ -166,16 +223,29 @@ class Ambient:
         return Ambient.from_dataset(dset)
 
     def close(self):
+        """
+        Close the underlying data source
+        """
         pass
 
 
 class AmbientXarray(Ambient):
+    """
+    Data about the ambient ocean, from in-memory dataset.
+
+    This subclass is using an xarray.Dataset object as its data source. The dataset
+    should have variables ``u``, ``v`` and ``dens``, all indexed by the coordinates
+    ``depth`` and ``time``.
+
+    :param dset: An xarray.Dataset object
+    """
+
     def __init__(self, dset):
         self._dset = dset
         self._tmin = dset.time[0].values
         self._tmax = dset.time[-1].values
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         if self._dset.dims['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
@@ -185,8 +255,22 @@ class AmbientXarray(Ambient):
 
 
 class Output:
+    """
+    Class for writing simulation output to disk
+
+    This is an abstract base class with no explicit constructor. To initialize an
+    instance of the class, use the factory method.
+    """
+
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "Output":
+        """
+        Initialize using :doc:`configuration parameters </config/output>`
+
+        :param conf: A dict of configuration parameters
+        :return: An initialized object
+        """
+
         if 'csv' in conf:
             return OutputCSV.from_config(conf)
         elif 'nc' in conf:
@@ -196,14 +280,33 @@ class Output:
 
     @abc.abstractmethod
     def write(self, time, result):
+        """
+        Write simulation results to disk
+
+        :param time: Discharge time, as numpy.datetime64 object
+        :param result: Simulation result, as returned by :func:`effluent.solver.Solver.solve`
+        """
         return NotImplementedError
 
     def close(self):
+        """
+        Close the underlying data stream
+        """
         pass
 
 
 class OutputCSV(Output):
-    def __init__(self, file, variables, float_format, separator):
+    """
+    Class for writing simulation output to CSV file.
+
+    The output file is created lazily upon the first write statement.
+
+    :param file: Name of output file
+    :param variables: A list of variable names to include
+    :param float_format: Output format for float numbers
+    :param separator: Symbol used as data separator
+    """
+    def __init__(self, file, variables=None, float_format="%.10g", separator=","):
         self.variables = variables
         self.float_format = float_format
         self.separator = separator
@@ -239,14 +342,16 @@ class OutputCSV(Output):
             self.dset = None
 
     @staticmethod
-    def from_config(conf):
-        out = OutputCSV(
-            file=conf['csv']['file'],
-            variables=conf.get('variables', None),
-            float_format=conf['csv'].get('float_format', '%.10g'),
-            separator=conf.get('separator', ','),
-        )
-        return out
+    def from_config(conf) -> "OutputCSV":
+        params = dict(file=conf['csv']['file'])
+        if 'variables' in conf:
+            params['variables'] = conf['variables']
+        if 'float_format' in conf['csv']:
+            params['float_format'] = conf['csv']['float_format']
+        if 'separator' in conf['csv']:
+            params['separator'] = conf['csv']['separator']
+
+        return OutputCSV(**params)
 
     def write(self, time, result):
         self.open()  # Lazy opening: Only effective if first time
@@ -262,7 +367,6 @@ class OutputCSV(Output):
         # Append result to file, write headers only if blank file
         df.to_csv(
             self.dset,
-            lineterminator='\n',
             header=self._blank_file,
             float_format=self.float_format,
             index=False,
@@ -271,6 +375,15 @@ class OutputCSV(Output):
 
 
 class OutputNC(Output):
+    """
+    Class for writing simulation output to netCDF file.
+
+    The output file is created lazily upon the first write statement.
+
+    :param file: Name of output file
+    :param variables: A list of variable names to include
+    """
+
     def __init__(self, file, variables):
         self.variables = variables
         self.dset = None
@@ -283,8 +396,7 @@ class OutputNC(Output):
 
         elif isinstance(file, xr.Dataset):
             # Diskless mode: Data is written to memory, and to an xarray.Dataset on exit
-            from uuid import uuid4
-            self.fname = uuid4()
+            self.fname = uuid.uuid4()
             self.diskless = True
             self.xr_dset = file
 
@@ -312,7 +424,7 @@ class OutputNC(Output):
             self.dset = None
 
     @staticmethod
-    def from_config(conf):
+    def from_config(conf) -> "OutputNC":
         out = OutputNC(
             file=conf['nc']['file'],
             variables=conf.get('variables', None)
@@ -376,7 +488,35 @@ class OutputNC(Output):
         r.coords['release_time'].attrs['units'] = 's'
 
 
+def convert_to_nc_date(
+        xr_var: xr.Variable, units: str = 'seconds since 1970-01-01',
+        calendar: str = 'proleptic_gregorian', dtype='i8',
+) -> xr.Variable:
+    """
+    Convert an xarray date variable to a CF-style date variable
+
+    On default, the xarray date will be converted to seconds (int64) since the unix epoch
+    (1970-01-01) using the proleptic gregorian calendar.
+
+    :param xr_var: Input variable, with values of type numpy.datetime64
+    :param units: Output units, as defined by CF conventions
+    :param calendar: Output calendar, as defined by CF conventions
+    :param dtype: Output data type, as defined by numpy conventions
+    :return: Output variable, with values converted to seconds since epoch
+    """
+    dates = xr_var.values.astype('datetime64[us]').tolist()
+    cf_dates = cftime.date2num(dates=dates, units=units, calendar=calendar).astype(dtype)
+    new_attrs = {**xr_var.attrs, **dict(units=units, calendar=calendar)}
+    return xr.Variable(dims=xr_var.dims, data=cf_dates, attrs=new_attrs)
+
+
 def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+    """
+    Write data from an xarray.Dataset to a netCDF4.Dataset
+
+    :param xr_dset: Input dataset
+    :param nc_dset: Output dataset
+    """
     unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
 
     # Write dimensions
@@ -387,6 +527,9 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Write variables
     for name, xr_var in xr_dset.variables.items():
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var)
+
         nc_var = nc_dset.createVariable(
             varname=name,
             datatype=xr_var.dtype,
@@ -401,6 +544,13 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
 
 def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
+    """
+    Write data from a netCDF4.Dataset to a an xarray.Dataset
+
+    :param nc_dset: Input dataset
+    :param xr_dset: Output dataset
+    """
+
     # Write variables
     for name, nc_var in nc_dset.variables.items():
         xr_var = xr.Variable(
@@ -416,6 +566,15 @@ def write_nc_to_xr(nc_dset: nc.Dataset, xr_dset: xr.Dataset):
 
 
 def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
+    """
+    Append data from an xarray.Dataset to a netCDF4.Dataset
+
+    This method does not create new variables in the destination dataset, but only
+    appends to the existing variables.
+
+    :param xr_dset: Input dataset
+    :param nc_dset: Output dataset
+    """
     unlim_dims = [k for k, v in nc_dset.dimensions.items() if v.isunlimited()]
     unlim_dim = unlim_dims[0] if len(unlim_dims) > 0 else None
     unlim_vars = [k for k, v in xr_dset.variables.items() if v.dims[0] == unlim_dim]
@@ -426,12 +585,30 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
 
     # Append data
     for name in unlim_vars:
-        xr_var = xr_dset[name]
+        xr_var = xr_dset.variables[name]
+        if np.issubdtype(xr_var.dtype, np.datetime64):
+            xr_var = convert_to_nc_date(xr_var, units=nc_dset[name].units,
+                                        calendar=nc_dset[name].calendar)
         nc_var = nc_dset.variables[name]
         nc_var[num_old_items:num_items] = xr_var.values
 
 
 class AmbientRoms(Ambient):
+    """
+    Data about the ambient ocean, from ROMS.
+
+    This subclass is using ROMS output files as its data source. The constructor also
+    needs the pipe position and azimuth, as described in the
+    :doc:`documentation </config/ambient>` of the configuration file.
+
+    The class lazily opens the underlying data source the first time it's needed.
+
+    :param file: A set of ROMS files, specified with a wildcard string
+    :param latitude: The pipe latitude
+    :param longitude: The pipe longitude
+    :param azimuth: The pipe azimuth (north = 0, east = 90)
+    """
+
     def __init__(self, file, latitude, longitude, azimuth):
         self.file = file
         self.latitude = latitude
@@ -454,12 +631,11 @@ class AmbientRoms(Ambient):
 
     def open(self):
         if self.dset is None:
-            import effluent.roms
             dset = effluent.roms.open_location(
                 file=self.file,
-                latitude=self.latitude,
-                longitude=self.longitude,
-                azimuth=self.azimuth,
+                lat=self.latitude,
+                lon=self.longitude,
+                az=self.azimuth,
             )
 
             keep_vars = ['time', 'depth', 'u', 'v', 'dens']
@@ -475,7 +651,7 @@ class AmbientRoms(Ambient):
             self.dset.close()
             self.dset = None
 
-    def select(self, time):
+    def select(self, time) -> xr.Dataset:
         self.open()
 
         clipped_time = np.clip(time, self._tmin, self._tmax)

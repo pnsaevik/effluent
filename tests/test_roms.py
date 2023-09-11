@@ -43,11 +43,11 @@ class Test_open_dataset:
 class Test_select_latlon:
     def test_returns_single_point(self):
         with roms.open_dataset(file=FORCING_1, z_rho=True) as dset:
-            dset2 = roms.select_latlon(dset, lat=59.03, lon=5.68)
+            dset2 = roms.interpolate_latlon(dset, lat=59.03, lon=5.68)
             assert dset2.temp.dims == ('ocean_time', 's_rho')
 
 
-class Test_compute_azimuthal_velocity:
+class Test_compute_azimuthal_vel:
     def test_returns_correct_values(self):
         angle_xi = np.pi/3
         angle_vel = np.array(
@@ -63,7 +63,7 @@ class Test_compute_azimuthal_velocity:
                 }),
             )
         )
-        vel = roms.compute_azimuthal_velocity(dset, azimuth=angle_vel)
+        vel = roms.compute_azimuthal_vel(dset, az=angle_vel)
         assert vel.values.round().astype('i4').tolist() == [46, 20, -46, -20, 40, -30, -40, 30]
 
 
@@ -71,7 +71,7 @@ class Test_open_location:
     def test_correct_vars_and_dims(self):
         dset = xr.Dataset()
         try:
-            dset = roms.open_location(FORCING_glob, latitude=59.03, longitude=5.68, azimuth=0)
+            dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
             assert dset.dens.dims == ('time', 'depth')
             assert dset.u.dims == ('time', 'depth')
             assert dset.v.dims == ('time', 'depth')
