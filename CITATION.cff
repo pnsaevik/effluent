@@ -5,8 +5,9 @@ authors:
   given-names: "Pål Næverlid"
   orcid: "https://orcid.org/0000-0002-7301-2008"
 title: "Effluent: A Python package for modelling effluent discharge"
-version: 1.2
-date-released: 2023-04-14
+doi: 10.5281/zenodo.8333370
+version: 1.3
+date-released: 2023-09-11
 license: MIT
 url: "https://effluent.readthedocs.io/en/latest/"
 repository-code: "https://github.com/pnsaevik/effluent/"
