@@ -1,6 +1,7 @@
 [![CircleCI](
 https://circleci.com/gh/pnsaevik/effluent/tree/main.svg?style=shield)
 ](https://circleci.com/gh/pnsaevik/effluent)
+[![DOI](https://zenodo.org/badge/472699753.svg)](https://zenodo.org/badge/latestdoi/472699753)
 
 # effluent
 
