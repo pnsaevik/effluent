@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.1] - 2023-09-13
 
+### Added
+- Zenodo metadata file
+
 ### Fixed
 - Inline citations in the in-repo paper
 

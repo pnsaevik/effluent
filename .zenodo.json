@@ -1,0 +1,24 @@
+{
+  "title": "Effluent: A Python package for modelling effluent discharge",
+  "license": "MIT",
+  "description": "An open-source python package for simulating the dispersion of effluent discharges from wastewater pipes.",
+  "upload_type": "software",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Pål Næverlid Sævik",
+      "affiliation": "Institute of Marine Research",
+      "orcid": "0000-0002-7301-2008"
+    }
+  ],
+  "contributors": [],
+  "related_identifiers": [
+    {"scheme": "doi", "relation": "cites", "identifier": "10.1023/A:1025583110842"},
+    {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.envsoft.2003.08.018"},
+    {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.ocemod.2004.08.002"},
+    {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.desal.2011.11.037"},
+    {"scheme": "isbn", "relation": "cites", "identifier": "978-1-4615-0407-8"},
+    {"scheme": "url", "relation": "isSupplementTo", "identifier": "https://github.com/pnsaevik/effluent/tree/v1.3"},
+    {"scheme": "doi", "relation": "isVersionOf","identifier": "10.5281/zenodo.8333370"}
+  ]
+}
