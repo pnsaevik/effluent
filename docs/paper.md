@@ -39,7 +39,7 @@ impact.
 
 `effluent` is an open-source python package for simulating the dispersion of
 effluent discharges from wastewater pipes. The underlying model is based on
-[@Lee2003]. The implementation also contains couplings to the popular
+@Lee2003. The implementation also contains couplings to the popular
 open-source ocean model ROMS [@Shchepetkin2005].
 
 There already exists multiple closed-source applications for modelling outfall
