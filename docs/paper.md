@@ -45,7 +45,7 @@ open-source ocean model ROMS [@Shchepetkin2005].
 There already exists multiple closed-source applications for modelling outfall
 dispersion, such as Cormix [@Jirka2004], Visual Plumes [@Frick2004]
 or Visjet [@Lee2003]. A thorough comparison between these models has been done
-by Palomar et al. [@Palomar2012]. The model equations in Cormix is based on
+by @Palomar2012. The model equations in Cormix is based on
 interpolating between different asymptotic regimes, while Visual Plumes and
 Visjet use an entrainment hypothesis to model the expansion of the jet. Cormix
 and Visual Plumes use the Eulerian approach to derive and solve the model
