@@ -17,6 +17,7 @@
     {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.envsoft.2003.08.018"},
     {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.ocemod.2004.08.002"},
     {"scheme": "doi", "relation": "cites", "identifier": "10.1016/j.desal.2011.11.037"},
+    {"scheme": "doi", "relation": "cites", "identifier": "10.1007/978-1-4615-0407-8"},
     {"scheme": "isbn", "relation": "cites", "identifier": "978-1-4615-0407-8"}
   ]
 }

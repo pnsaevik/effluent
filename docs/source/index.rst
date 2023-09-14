@@ -26,11 +26,18 @@ these analyses are conducted in post-processing stages using other packages.
 Citation
 ========
 
-If you use the software in a publication or report, please cite it as specified
-in the repository file ``CITATION.cff``. Consider also citing Lee,
-Joseph H. W., and Chu, Vincent H. (2003): `Turbulent Jets and Plumes -
-A Lagrangian Approach <https://doi.org/10.1007/978-1-4615-0407-8>`_, which
-the package is based on.
+If you use the software in a publication or report, please cite it as follows:
+
+Sævik, P. N., (2023). *Effluent: A Python package for modelling effluent discharge*.
+Journal of Open Source Software, **8**\ (89),
+`<https://doi.org/10.21105/joss.05554>`_
+
+Consider also citing the work which this package is based on:
+
+Lee, J. H. W., and Chu, V. H. (2003).
+*Turbulent Jets and Plumes - A Lagrangian Approach*. Boston, MA: Springer US.
+`<https://doi.org/10.1007/978-1-4615-0407-8>`_.
+
 
 Installation
 ============
