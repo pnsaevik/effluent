@@ -4,7 +4,6 @@ The module contains functions for working with ROMS datasets
 
 from __future__ import annotations
 
-import contextlib
 import numpy as np
 import glob
 import xarray as xr
@@ -90,60 +89,6 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     )
 
     return dset_combined
-
-
-@contextlib.contextmanager
-def open_datasets(files, z_rho=False, z_rho_star=False, dens=False) -> list[xr.Dataset]:
-    """
-    Open ROMS dataset
-
-    Variables are lazily loaded or computed.
-
-    :param files: List of file names, or wildcard pattern
-    :param z_rho: True if rho depths should be added (implies z_rho_star, default: False)
-    :param z_rho_star: True if rho star depths should be added (default: False)
-    :param dens: True if density should be added (implies z_rho_star, default: False)
-    :return: An xarray.Dataset object
-    """
-    if isinstance(files, str):
-        fnames = sorted(glob.glob(files))
-    else:
-        fnames = files
-
-    if len(fnames) == 0:
-        raise ValueError(f'No files found: "{fnames}"')
-
-    dsets = []
-    for fname in fnames:
-        logger.info(f'Open file {fname}')
-        dsets.append(xr.open_dataset(fname))
-
-    try:
-        if z_rho or dens:
-            z_rho_star = True
-
-        if z_rho_star:
-            logger.info('Compute depths')
-            zrho_star = compute_zrho_star(dsets[0])
-            dsets = [d.assign_coords(z_rho_star=zrho_star) for d in dsets]
-
-        if z_rho:
-            logger.info('Compute tidal depths')
-            zrho = compute_zrho(dsets[0])
-            dsets = [d.assign_coords(z_rho=zrho) for d in dsets]
-
-        if dens:
-            for i, dset in enumerate(dsets):
-                logger.info(f'Compute density for file {fnames[i]}')
-                dens = compute_dens(dset)
-                dsets[i] = dset.assign(dens=dens)
-
-        yield dsets
-
-    finally:
-        for dset, fname in zip(dsets, fnames):
-            logger.info(f'Close file {fname}')
-            dset.close()
 
 
 def compute_zrho(dset: xr.Dataset) -> xr.Dataset:

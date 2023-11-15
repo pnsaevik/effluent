@@ -14,44 +14,9 @@ FORCING_1 = str(FIXTURES_DIR / 'forcing_1.nc')
 FORCING_glob = str(FIXTURES_DIR / 'forcing_?.nc')
 
 
-class Test_open_dataset:
-    def test_fails_if_no_files(self):
-        with pytest.raises(ValueError):
-            with roms.open_datasets(files='this_is_no_file'):
-                pass
-
-    def test_correct_dims_when_multi_file(self):
-        with roms.open_datasets(files=FORCING_glob) as dsets:
-            assert len(dsets) == 2
-            assert dsets[0].dims['ocean_time'] == 4
-            assert dsets[1].dims['ocean_time'] == 4
-
-            dset = dsets[0]
-            assert dset['zeta'].dims == ('ocean_time', 'eta_rho', 'xi_rho')
-            assert dset['h'].dims == ('eta_rho', 'xi_rho')
-            assert dset['hc'].dims == ()
-
-    def test_can_add_depth_values(self):
-        with roms.open_datasets(files=[FORCING_1], z_rho=True) as (dset, ):
-            assert dset['z_rho_star'].dims == ('s_rho', 'eta_rho', 'xi_rho')
-            assert dset['z_rho'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
-
-            depths = dset['z_rho_star'].values
-            assert np.all(depths < 0)
-            assert np.all(depths > -dset['h'].values)
-
-    def test_can_add_dens_values(self):
-        with roms.open_datasets(files=FORCING_1, dens=True) as (dset, ):
-            assert dset['dens'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
-
-            dens = dset['dens'].values
-            assert np.nanmin(dens) > 900
-            assert np.nanmax(dens) < 1100
-
-
 class Test_select_latlon:
     def test_returns_single_point(self):
-        with roms.open_datasets(files=[FORCING_1], z_rho=True) as (dset, ):
+        with xr.open_dataset(FORCING_1) as dset:
             dset2 = roms.interpolate_latlon(dset, lat=59.03, lon=5.68)
             assert dset2.temp.dims == ('ocean_time', 's_rho')
 
@@ -105,13 +70,3 @@ class Test_open_location:
             expected = fp.read()
 
         assert txt == expected
-
-    def tast_on_real_data(self):
-        lon = 5.27266
-        lat = 60.46511
-        az = 270
-
-        pattern = 'S:\\scratch\\ROMS\\NorFjords-Fram\\A01-13\\A04\\norfjords_160m_his.nc4_2017040*'
-        # pattern = '/data/osea/scratch/ROMS/NorFjords-Fram/A01-13*/A04/norfjords_160m_his.nc4_2022*'
-
-        dset = roms.open_location(pattern, lat, lon, az)
