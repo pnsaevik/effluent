@@ -105,3 +105,13 @@ class Test_open_location:
             expected = fp.read()
 
         assert txt == expected
+
+    def tast_on_real_data(self):
+        lon = 5.27266
+        lat = 60.46511
+        az = 270
+
+        pattern = 'S:\\scratch\\ROMS\\NorFjords-Fram\\A01-13\\A04\\norfjords_160m_his.nc4_2017040*'
+        # pattern = '/data/osea/scratch/ROMS/NorFjords-Fram/A01-13*/A04/norfjords_160m_his.nc4_2022*'
+
+        dset = roms.open_location(pattern, lat, lon, az)

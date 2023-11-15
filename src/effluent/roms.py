@@ -29,28 +29,51 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     :return: An xarray.Dataset object
     """
 
-    # Open a list of datasets
-    with open_datasets(file, dens=True) as dsets:
+    # Find all files
+    if isinstance(file, str):
+        fnames = sorted(glob.glob(file))
+    else:
+        fnames = file
 
-        # For each dataset, extract profile information from a single point
-        profile_dsets = []
-        for dset in dsets:
-            logger.info(f'Date: {dset.ocean_time[0].values.astype("datetime64[D]").item()}')
+    if len(fnames) == 0:
+        raise ValueError(f'No files found: "{fnames}"')
+
+    # Compute depth info
+    logger.info('Compute depths')
+    with xr.open_dataset(fnames[0]) as dset:
+        dset_point = interpolate_latlon(dset, lat, lon)
+        zrho_star = compute_zrho_star(dset_point)
+
+    # Extract profile info for each dataset
+    profile_dsets = []
+    for fname in fnames:
+        logger.info(f'Open file {fname}')
+        with xr.open_dataset(fname) as dset:
             logger.info(f'Horizontal interpolation')
-            dset = interpolate_latlon(dset, lat, lon)
+            dset = dset.interp(
+                xi_rho=dset_point.xi_rho,
+                eta_rho=dset_point.eta_rho,
+                xi_u=dset_point.xi_u,
+                eta_u=dset_point.eta_u,
+                xi_v=dset_point.xi_v,
+                eta_v=dset_point.eta_v,
+            )
 
-            # Set coordinates
-            dset = dset.rename(z_rho_star='depth', ocean_time='time')
-            dset = dset.assign_coords(depth=-dset['depth'])
-            dset = dset.swap_dims({'s_rho': 'depth'})
-
-            # Rotate velocity
             logger.info(f'Rotate velocity vectors')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
             dset = dset.assign(u=u, v=v)
 
+            logger.info("Compute density")
+            dset = dset.assign(z_rho_star=zrho_star)
+            dset = dset.assign(dens=compute_dens(dset))
+            dset = dset.rename(z_rho_star='depth', ocean_time='time')
+            dset = dset.assign_coords(depth=-dset['depth'])
+            dset = dset.swap_dims({'s_rho': 'depth'})
+
             profile_dsets.append(dset)
+
+            logger.info(f'Close file {fname}')
 
     # Concatenate datasets
     logger.info('Concatenate datasets')
@@ -139,7 +162,8 @@ def compute_zrho(dset: xr.Dataset) -> xr.Dataset:
     else:
         raise ValueError(f'Unknown Vtransform: {vtrans}')
 
-    z_rho = z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
+    dims = [d for d in ['ocean_time', 's_rho', 'eta_rho', 'xi_rho'] if d in z_rho.dims]
+    z_rho = z_rho.transpose(*dims)
     z_rho.name = 'z_rho'
     return z_rho
 
@@ -163,7 +187,8 @@ def compute_zrho_star(dset: xr.Dataset) -> xr.DataArray:
     else:
         raise ValueError(f'Unknown Vtransform: {vtrans}')
 
-    z_rho_star = z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho')
+    dims = [d for d in ['s_rho', 'eta_rho', 'xi_rho'] if d in z_rho_star.dims]
+    z_rho_star = z_rho_star.transpose(*dims)
     z_rho_star.name = 'z_rho_star'
     return z_rho_star
 
