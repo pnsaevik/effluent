@@ -25,7 +25,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     """
 
     # Select position
-    dset = open_dataset(file, z_rho=True, dens=True)
+    dset = open_dataset(file, dens=True)
     dset = interpolate_latlon(dset, lat, lon)
 
     # Set coordinates
@@ -41,15 +41,16 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     return dset
 
 
-def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
+def open_dataset(file, z_rho=False, z_rho_star=False, dens=False) -> xr.Dataset:
     """
     Open ROMS dataset
 
     Variables are lazily loaded or computed.
 
     :param file: Name of ROMS file(s), or wildcard pattern
-    :param z_rho: True if rho depths should be added (default: False)
-    :param dens: True if density should be added (implies z_rho, default: False)
+    :param z_rho: True if rho depths should be added (implies z_rho_star, default: False)
+    :param z_rho_star: True if rho star depths should be added (default: False)
+    :param dens: True if density should be added (implies z_rho_star, default: False)
     :return: An xarray.Dataset object
     """
     fnames = sorted(glob.glob(file))
@@ -72,6 +73,12 @@ def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
         )
 
     if z_rho or dens:
+        z_rho_star = True
+
+    if z_rho_star:
+        dset = add_zrho_star(dset)
+
+    if z_rho:
         dset = add_zrho(dset)
 
     if dens:
@@ -84,23 +91,46 @@ def add_zrho(dset: xr.Dataset) -> xr.Dataset:
     """
     Add z_rho variable to a ROMS dataset
 
+    The z_rho variable is negative depth, with tidal variation
+
     :param dset: ROMS dataset
     :return: New dataset with z_rho added
     """
     vtrans = dset['Vtransform']
+    z_rho_star = dset['z_rho_star']
 
     if vtrans == 1:
-        z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
         z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
     elif vtrans == 2:
-        z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
-        z_rho_star = z_rho_0 * dset.h
-        z_rho = dset.zeta + z_rho_0 * (dset.zeta + dset.h)
+        z_rho = dset.zeta + z_rho_star * (dset.zeta / dset.h + 1)
     else:
         raise ValueError(f'Unknown Vtransform: {vtrans}')
 
     return dset.assign_coords(
         z_rho=z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),
+    )
+
+
+def add_zrho_star(dset: xr.Dataset) -> xr.Dataset:
+    """
+    Add z_rho_star variable to a ROMS dataset
+
+    The z_rho_star variable is negative depth, without tidal variation
+
+    :param dset: ROMS dataset
+    :return: New dataset with z_rho_star added
+    """
+    vtrans = dset['Vtransform']
+
+    if vtrans == 1:
+        z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
+    elif vtrans == 2:
+        z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
+        z_rho_star = z_rho_0 * dset.h
+    else:
+        raise ValueError(f'Unknown Vtransform: {vtrans}')
+
+    return dset.assign_coords(
         z_rho_star=z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho'),
     )
 
