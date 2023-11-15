@@ -8,6 +8,10 @@ import glob
 import xarray as xr
 import effluent.eos
 import effluent.numerics
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def open_location(file, lat, lon, az) -> xr.Dataset:
@@ -31,6 +35,8 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         # For each dataset, extract profile information from a single point
         profile_dsets = []
         for dset in dsets:
+            logger.info(f'Date: {dset.ocean_time[0].values.astype("datetime64[D]").item()}')
+            logger.info(f'Horizontal interpolation')
             dset = interpolate_latlon(dset, lat, lon)
 
             # Set coordinates
@@ -39,6 +45,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
             dset = dset.swap_dims({'s_rho': 'depth'})
 
             # Rotate velocity
+            logger.info(f'Rotate velocity vectors')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
             dset = dset.assign(u=u, v=v)
@@ -46,6 +53,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
             profile_dsets.append(dset)
 
     # Concatenate datasets
+    logger.info('Concatenate datasets')
     dset_combined = xr.concat(
         objs=profile_dsets,
         dim='time',
@@ -79,29 +87,36 @@ def open_datasets(files, z_rho=False, z_rho_star=False, dens=False) -> list[xr.D
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
 
-    dsets = [xr.open_dataset(fname) for fname in fnames]
+    dsets = []
+    for fname in fnames:
+        logger.info(f'Open file {fname}')
+        dsets.append(xr.open_dataset(fname))
 
     try:
         if z_rho or dens:
             z_rho_star = True
 
         if z_rho_star:
+            logger.info('Compute depths')
             zrho_star = compute_zrho_star(dsets[0])
             dsets = [d.assign_coords(z_rho_star=zrho_star) for d in dsets]
 
         if z_rho:
+            logger.info('Compute tidal depths')
             zrho = compute_zrho(dsets[0])
             dsets = [d.assign_coords(z_rho=zrho) for d in dsets]
 
         if dens:
             for i, dset in enumerate(dsets):
+                logger.info(f'Compute density for file {fnames[i]}')
                 dens = compute_dens(dset)
                 dsets[i] = dset.assign(dens=dens)
 
         yield dsets
 
     finally:
-        for dset in dsets:
+        for dset, fname in zip(dsets, fnames):
+            logger.info(f'Close file {fname}')
             dset.close()
 
 
