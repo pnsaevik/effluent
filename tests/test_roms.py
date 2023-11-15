@@ -3,7 +3,6 @@
 import netCDF4
 
 from effluent import roms
-import pytest
 import numpy as np
 from pathlib import Path
 import xarray as xr
