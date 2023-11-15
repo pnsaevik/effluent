@@ -1,7 +1,6 @@
 # Extra top-level import to address bug in netCDF4 library
 # noinspection PyUnresolvedReferences
 import netCDF4
-import pandas as pd
 
 from effluent import roms
 import pytest
@@ -18,18 +17,22 @@ FORCING_glob = str(FIXTURES_DIR / 'forcing_?.nc')
 class Test_open_dataset:
     def test_fails_if_no_files(self):
         with pytest.raises(ValueError):
-            with roms.open_dataset(file='this_is_no_file'):
+            with roms.open_datasets(files='this_is_no_file'):
                 pass
 
     def test_correct_dims_when_multi_file(self):
-        with roms.open_dataset(file=FORCING_glob) as dset:
-            assert dset.dims['ocean_time'] == 8
+        with roms.open_datasets(files=FORCING_glob) as dsets:
+            assert len(dsets) == 2
+            assert dsets[0].dims['ocean_time'] == 4
+            assert dsets[1].dims['ocean_time'] == 4
+
+            dset = dsets[0]
             assert dset['zeta'].dims == ('ocean_time', 'eta_rho', 'xi_rho')
             assert dset['h'].dims == ('eta_rho', 'xi_rho')
             assert dset['hc'].dims == ()
 
     def test_can_add_depth_values(self):
-        with roms.open_dataset(file=FORCING_1, z_rho=True) as dset:
+        with roms.open_datasets(files=[FORCING_1], z_rho=True) as (dset, ):
             assert dset['z_rho_star'].dims == ('s_rho', 'eta_rho', 'xi_rho')
             assert dset['z_rho'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
 
@@ -38,7 +41,7 @@ class Test_open_dataset:
             assert np.all(depths > -dset['h'].values)
 
     def test_can_add_dens_values(self):
-        with roms.open_dataset(file=FORCING_1, dens=True) as dset:
+        with roms.open_datasets(files=FORCING_1, dens=True) as (dset, ):
             assert dset['dens'].dims == ('ocean_time', 's_rho', 'eta_rho', 'xi_rho')
 
             dens = dset['dens'].values
@@ -48,7 +51,7 @@ class Test_open_dataset:
 
 class Test_select_latlon:
     def test_returns_single_point(self):
-        with roms.open_dataset(file=FORCING_1, z_rho=True) as dset:
+        with roms.open_datasets(files=[FORCING_1], z_rho=True) as (dset, ):
             dset2 = roms.interpolate_latlon(dset, lat=59.03, lon=5.68)
             assert dset2.temp.dims == ('ocean_time', 's_rho')
 
