@@ -1,8 +1,10 @@
 """
 The module contains functions for working with ROMS datasets
 """
-import contextlib
 
+from __future__ import annotations
+
+import contextlib
 import numpy as np
 import glob
 import xarray as xr
