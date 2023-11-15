@@ -279,7 +279,7 @@ class Test_Ambient_from_config:
 
     def test_roms_file(self):
         from pathlib import Path
-        FORCING_glob = str(Path(__file__).parent.joinpath('forcing_?.nc'))
+        FORCING_glob = str(Path(__file__).parent.joinpath('fixtures/forcing_?.nc'))
 
         conf = dict(roms=dict(file=FORCING_glob, latitude=59.03, longitude=5.68, azimuth=0))
         with effluent.io.Ambient.from_config(conf) as p:

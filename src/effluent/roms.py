@@ -2,11 +2,17 @@
 The module contains functions for working with ROMS datasets
 """
 
+from __future__ import annotations
+
 import numpy as np
 import glob
 import xarray as xr
 import effluent.eos
 import effluent.numerics
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def open_location(file, lat, lon, az) -> xr.Dataset:
@@ -24,95 +30,127 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     :return: An xarray.Dataset object
     """
 
-    # Select position
-    dset = open_dataset(file, z_rho=True, dens=True)
-    dset = interpolate_latlon(dset, lat, lon)
+    # Find all files
+    if isinstance(file, str):
+        fnames = sorted(glob.glob(file))
+    else:
+        fnames = file
 
-    # Set coordinates
-    dset = dset.rename(z_rho_star='depth', ocean_time='time')
-    dset = dset.swap_dims({'s_rho': 'depth'})
-
-    # Rotate velocity
-    u = compute_azimuthal_vel(dset, az * (np.pi / 180))
-    v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
-    dset = dset.assign(u=u, v=v)
-
-    return dset
-
-
-def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
-    """
-    Open ROMS dataset
-
-    Variables are lazily loaded or computed.
-
-    :param file: Name of ROMS file(s), or wildcard pattern
-    :param z_rho: True if rho depths should be added (default: False)
-    :param dens: True if density should be added (implies z_rho, default: False)
-    :return: An xarray.Dataset object
-    """
-    fnames = sorted(glob.glob(file))
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
 
-    if len(fnames) == 1:
-        dset = xr.open_dataset(fnames[0])
-    else:
-        dset = xr.open_mfdataset(
-            paths=fnames,
-            chunks={'ocean_time': 1},
-            concat_dim='ocean_time',
-            compat='override',
-            data_vars='minimal',
-            coords='minimal',
-            combine='nested',
-            join='override',
-            combine_attrs='override',
-        )
+    # Compute depth info
+    logger.info(f'Compute depths from {fnames[0]}')
+    with xr.open_dataset(fnames[0]) as dset:
+        ddset = dset[['Vtransform', 'hc', 'h', 'Cs_r', 'lat_rho', 'lon_rho', 'u', 'v']].isel(ocean_time=0)
+        dset_point = interpolate_latlon(ddset, lat, lon)
+        zrho_star = compute_zrho_star(dset_point)
 
-    if z_rho or dens:
-        dset = add_zrho(dset)
+    # Extract profile info for each dataset
+    profile_dsets = []
+    for fname in fnames:
+        logger.info(f'Open file {fname}')
+        with xr.open_dataset(fname) as dset:
+            logger.info(f'Horizontal interpolation')
+            dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
+            dset = dset.interp(
+                xi_rho=dset_point.xi_rho.values,
+                eta_rho=dset_point.eta_rho.values,
+                xi_u=dset_point.xi_u.values,
+                eta_u=dset_point.eta_u.values,
+                xi_v=dset_point.xi_v.values,
+                eta_v=dset_point.eta_v.values,
+            )
 
-    if dens:
-        dset = add_dens(dset)
+            logger.info(f'Rotate velocity vectors, compute density')
+            u = compute_azimuthal_vel(dset, az * (np.pi / 180))
+            v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
+            dset = dset.assign(u=u, v=v)
 
-    return dset
+            dset = dset.assign(z_rho_star=zrho_star)
+            dset = dset.assign(dens=compute_dens(dset))
+            dset = dset.rename(z_rho_star='depth', ocean_time='time')
+            dset = dset.assign_coords(depth=-dset['depth'])
+            dset = dset.swap_dims({'s_rho': 'depth'})
+
+            profile_dsets.append(dset)
+
+            logger.debug(f'Close file {fname}')
+
+    # Concatenate datasets
+    logger.info('Concatenate datasets')
+    dset_combined = xr.concat(
+        objs=profile_dsets,
+        dim='time',
+        data_vars='minimal',
+        coords='minimal',
+        compat='override',
+        combine_attrs='override',
+    )
+
+    return dset_combined
 
 
-def add_zrho(dset: xr.Dataset) -> xr.Dataset:
+def compute_zrho(dset: xr.Dataset) -> xr.Dataset:
     """
-    Add z_rho variable to a ROMS dataset
+    Compute z_rho variable from a ROMS dataset
+
+    The z_rho variable is negative depth, with tidal variation
 
     :param dset: ROMS dataset
-    :return: New dataset with z_rho added
+    :return: The z_rho variable
+    """
+    vtrans = dset['Vtransform']
+    z_rho_star = dset['z_rho_star']
+
+    if vtrans == 1:
+        z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
+    elif vtrans == 2:
+        z_rho = dset.zeta + z_rho_star * (dset.zeta / dset.h + 1)
+    else:
+        raise ValueError(f'Unknown Vtransform: {vtrans}')
+
+    dims = [d for d in ['ocean_time', 's_rho', 'eta_rho', 'xi_rho'] if d in z_rho.dims]
+    z_rho = z_rho.transpose(*dims)
+    z_rho.name = 'z_rho'
+    return z_rho
+
+
+def compute_zrho_star(dset: xr.Dataset) -> xr.DataArray:
+    """
+    Compute z_rho_star variable from a ROMS dataset
+
+    The z_rho_star variable is negative depth, without tidal variation
+
+    :param dset: ROMS dataset
+    :return: The z_rho_star variable
     """
     vtrans = dset['Vtransform']
 
     if vtrans == 1:
         z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
-        z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
     elif vtrans == 2:
         z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
         z_rho_star = z_rho_0 * dset.h
-        z_rho = dset.zeta + z_rho_0 * (dset.zeta + dset.h)
     else:
         raise ValueError(f'Unknown Vtransform: {vtrans}')
 
-    return dset.assign_coords(
-        z_rho=z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),
-        z_rho_star=z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho'),
-    )
+    dims = [d for d in ['s_rho', 'eta_rho', 'xi_rho'] if d in z_rho_star.dims]
+    z_rho_star = z_rho_star.transpose(*dims)
+    z_rho_star.name = 'z_rho_star'
+    return z_rho_star
 
 
-def add_dens(dset: xr.Dataset) -> xr.Dataset:
+def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     """
-    Add variable ``dens`` to a ROMS dataset
+    Compute variable ``dens`` from a ROMS dataset
 
     :param dset: ROMS dataset
     :return: New dataset with ``dens`` added
     """
     dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
-    return dset.assign_coords(dens=dens)
+    dens.name = 'dens'
+    return dens
 
 
 def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
