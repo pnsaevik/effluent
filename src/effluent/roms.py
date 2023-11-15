@@ -41,9 +41,10 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         raise ValueError(f'No files found: "{fnames}"')
 
     # Compute depth info
-    logger.info('Compute depths')
+    logger.info(f'Compute depths from {fnames[0]}')
     with xr.open_dataset(fnames[0]) as dset:
-        dset_point = interpolate_latlon(dset, lat, lon)
+        ddset = dset[['Vtransform', 'hc', 'h', 'Cs_r', 'lat_rho', 'lon_rho', 'u', 'v']].isel(ocean_time=0)
+        dset_point = interpolate_latlon(ddset, lat, lon)
         zrho_star = compute_zrho_star(dset_point)
 
     # Extract profile info for each dataset
@@ -52,21 +53,21 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         logger.info(f'Open file {fname}')
         with xr.open_dataset(fname) as dset:
             logger.info(f'Horizontal interpolation')
+            dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
             dset = dset.interp(
-                xi_rho=dset_point.xi_rho,
-                eta_rho=dset_point.eta_rho,
-                xi_u=dset_point.xi_u,
-                eta_u=dset_point.eta_u,
-                xi_v=dset_point.xi_v,
-                eta_v=dset_point.eta_v,
+                xi_rho=dset_point.xi_rho.values,
+                eta_rho=dset_point.eta_rho.values,
+                xi_u=dset_point.xi_u.values,
+                eta_u=dset_point.eta_u.values,
+                xi_v=dset_point.xi_v.values,
+                eta_v=dset_point.eta_v.values,
             )
 
-            logger.info(f'Rotate velocity vectors')
+            logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
             dset = dset.assign(u=u, v=v)
 
-            logger.info("Compute density")
             dset = dset.assign(z_rho_star=zrho_star)
             dset = dset.assign(dens=compute_dens(dset))
             dset = dset.rename(z_rho_star='depth', ocean_time='time')
@@ -75,7 +76,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
 
             profile_dsets.append(dset)
 
-            logger.info(f'Close file {fname}')
+            logger.debug(f'Close file {fname}')
 
     # Concatenate datasets
     logger.info('Concatenate datasets')
