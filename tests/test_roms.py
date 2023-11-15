@@ -5,8 +5,8 @@ from pathlib import Path
 import xarray as xr
 
 
-FORCING_1 = str(Path(__file__).parent.joinpath('forcing_1.nc'))
-FORCING_glob = str(Path(__file__).parent.joinpath('forcing_?.nc'))
+FORCING_1 = str(Path(__file__).parent.joinpath('fixtures/forcing_1.nc'))
+FORCING_glob = str(Path(__file__).parent.joinpath('fixtures/forcing_?.nc'))
 
 
 class Test_open_dataset:
@@ -69,9 +69,8 @@ class Test_compute_azimuthal_vel:
 
 class Test_open_location:
     def test_correct_vars_and_dims(self):
-        dset = xr.Dataset()
+        dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         try:
-            dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
             assert dset.dens.dims == ('time', 'depth')
             assert dset.u.dims == ('time', 'depth')
             assert dset.v.dims == ('time', 'depth')
