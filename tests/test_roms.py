@@ -1,3 +1,8 @@
+# Extra top-level import to address bug in netCDF4 library
+# noinspection PyUnresolvedReferences
+import netCDF4
+import pandas as pd
+
 from effluent import roms
 import pytest
 import numpy as np
@@ -5,8 +10,9 @@ from pathlib import Path
 import xarray as xr
 
 
-FORCING_1 = str(Path(__file__).parent.joinpath('fixtures/forcing_1.nc'))
-FORCING_glob = str(Path(__file__).parent.joinpath('fixtures/forcing_?.nc'))
+FIXTURES_DIR = Path(__file__).parent.joinpath('fixtures')
+FORCING_1 = str(FIXTURES_DIR / 'forcing_1.nc')
+FORCING_glob = str(FIXTURES_DIR / 'forcing_?.nc')
 
 
 class Test_open_dataset:
@@ -77,3 +83,22 @@ class Test_open_location:
 
         finally:
             dset.close()
+
+    def test_correct_profile_data(self):
+        dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
+        varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']
+        try:
+            df = dset[varnames].to_dataframe()
+
+        finally:
+            dset.close()
+
+        df = df.reset_index()
+        df = df[varnames]
+        txt = df.to_csv(index=False, float_format="%.02f", lineterminator='\n')
+
+        fname = FIXTURES_DIR / 'profile.csv'
+        with open(fname, encoding='utf-8') as fp:
+            expected = fp.read()
+
+        assert txt == expected

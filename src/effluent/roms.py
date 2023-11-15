@@ -30,6 +30,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
 
     # Set coordinates
     dset = dset.rename(z_rho_star='depth', ocean_time='time')
+    dset = dset.assign_coords(depth=-dset['depth'])
     dset = dset.swap_dims({'s_rho': 'depth'})
 
     # Rotate velocity
