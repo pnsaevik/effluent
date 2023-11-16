@@ -53,6 +53,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         with xr.open_dataset(fname) as dset:
             logger.info(f'Horizontal interpolation')
             dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
+            dset = dset.drop_vars(['xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'])
             dset = dset.interp(
                 xi_rho=dset_point.xi_rho.values,
                 eta_rho=dset_point.eta_rho.values,
@@ -178,6 +179,7 @@ def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
     x = np.clip(x, x_min, x_max)
     y = np.clip(y, y_min, y_max)
 
+    dset = dset.drop_vars(['xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'])
     dset = dset.interp(
         xi_rho=x,
         eta_rho=y,
