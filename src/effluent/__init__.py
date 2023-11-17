@@ -5,7 +5,7 @@ main entry point of the application.
 
 from .script import run
 
-__version__ = "1.3.4"
+__version__ = "1.4.0"
 """
 The version number
 """
