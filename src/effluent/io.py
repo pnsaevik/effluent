@@ -631,7 +631,7 @@ class AmbientRoms(Ambient):
 
     def open(self):
         if self.dset is None:
-            dset = effluent.roms.open_location(
+            dset = effluent.roms.load_location(
                 file=self.file,
                 lat=self.latitude,
                 lon=self.longitude,

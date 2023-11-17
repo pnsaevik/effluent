@@ -15,9 +15,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def open_location(file, lat, lon, az) -> xr.Dataset:
+def load_location(file, lat, lon, az) -> xr.Dataset:
     """
-    Open ROMS dataset at specific location
+    Load ROMS dataset at specific location
 
     The output coordinates are 'time' and 'depth'. Fields are interpolated to the
     desired position, and the depth of each vertical level is computed. Current
