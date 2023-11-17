@@ -53,15 +53,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         with xr.open_dataset(fname) as dset:
             logger.info(f'Horizontal interpolation')
             dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
-            dset = dset.drop_vars(['xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'])
-            dset = dset.interp(
-                xi_rho=dset_point.xi_rho.values,
-                eta_rho=dset_point.eta_rho.values,
-                xi_u=dset_point.xi_u.values,
-                eta_u=dset_point.eta_u.values,
-                xi_v=dset_point.xi_v.values,
-                eta_v=dset_point.eta_v.values,
-            )
+            dset = interpolate_xy(dset, dset_point.xi_rho.values, dset_point.eta_rho.values)
 
             logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
@@ -172,6 +164,22 @@ def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
 
     y, x = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
 
+    return interpolate_xy(dset, x, y)
+
+
+def interpolate_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
+    """
+    Interpolate fields in ROMS dataset
+
+    The function uses bilinear interpolation for regular field variables, and
+    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
+    variables.
+
+    :param dset: ROMS dataset
+    :param x: The dataset x coordinate
+    :param y: The dataset y coordinate
+    :return: New dataset with all variables interpolated to the specified location
+    """
     x_min = 0.5
     y_min = 0.5
     x_max = dset.dims['xi_rho'] - 1.5
@@ -179,7 +187,8 @@ def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
     x = np.clip(x, x_min, x_max)
     y = np.clip(y, y_min, y_max)
 
-    dset = dset.drop_vars(['xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'])
+    cvars = {'xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'}
+    dset = dset.drop_vars(cvars.intersection(dset.variables))
     dset = dset.interp(
         xi_rho=x,
         eta_rho=y,

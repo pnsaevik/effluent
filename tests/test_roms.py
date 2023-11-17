@@ -20,6 +20,13 @@ class Test_select_latlon:
             assert dset2.temp.dims == ('ocean_time', 's_rho')
 
 
+class Test_interpolate_xy:
+    def test_returns_single_point(self):
+        with xr.open_dataset(FORCING_1) as dset:
+            dset2 = roms.interpolate_xy(dset, x=3, y=3)
+            assert dset2.temp.dims == ('ocean_time', 's_rho')
+
+
 class Test_compute_azimuthal_vel:
     def test_returns_correct_values(self):
         angle_xi = np.pi/3
