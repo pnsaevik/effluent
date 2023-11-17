@@ -6,6 +6,7 @@ from effluent import roms
 import numpy as np
 from pathlib import Path
 import xarray as xr
+import pytest
 
 
 FIXTURES_DIR = Path(__file__).parent.joinpath('fixtures')
@@ -13,18 +14,22 @@ FORCING_1 = str(FIXTURES_DIR / 'forcing_1.nc')
 FORCING_glob = str(FIXTURES_DIR / 'forcing_?.nc')
 
 
-class Test_select_latlon:
-    def test_returns_single_point(self):
-        with xr.open_dataset(FORCING_1) as dset:
-            dset2 = roms.interpolate_latlon(dset, lat=59.03, lon=5.68)
-            assert dset2.temp.dims == ('ocean_time', 's_rho')
+@pytest.fixture(scope='module')
+def dset1():
+    with xr.open_dataset(FORCING_1) as dset:
+        yield dset
 
 
-class Test_interpolate_xy:
-    def test_returns_single_point(self):
-        with xr.open_dataset(FORCING_1) as dset:
-            dset2 = roms.interpolate_xy(dset, x=3, y=3)
-            assert dset2.temp.dims == ('ocean_time', 's_rho')
+class Test_select_xy:
+    def test_returns_single_point(self, dset1):
+        ds = roms.select_xy(dset1, x=2, y=3)
+        assert ds.temp.dims == ('ocean_time', 's_rho')
+
+    def test_returns_correct_values(self, dset1):
+        ds = roms.select_xy(dset1, x=2, y=3)
+        assert 10.608 < float(ds.temp[0, 0]) < 10.610
+        assert 0.018 < float(ds.u[0, 0]) < 0.020
+        assert -0.044 < float(ds.v[0, 0]) < -0.042
 
 
 class Test_compute_azimuthal_vel:
@@ -48,16 +53,6 @@ class Test_compute_azimuthal_vel:
 
 
 class Test_open_location:
-    def test_correct_vars_and_dims(self):
-        dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
-        try:
-            assert dset.dens.dims == ('time', 'depth')
-            assert dset.u.dims == ('time', 'depth')
-            assert dset.v.dims == ('time', 'depth')
-
-        finally:
-            dset.close()
-
     def test_correct_profile_data(self):
         dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']

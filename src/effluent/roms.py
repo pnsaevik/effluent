@@ -39,11 +39,16 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
 
-    # Compute depth info
-    logger.info(f'Compute depths from {fnames[0]}')
+    # Find nearest grid cell
     with xr.open_dataset(fnames[0]) as dset:
-        ddset = dset[['Vtransform', 'hc', 'h', 'Cs_r', 'lat_rho', 'lon_rho', 'u', 'v']].isel(ocean_time=0)
-        dset_point = interpolate_latlon(ddset, lat, lon)
+        lat_rho = dset.lat_rho.values
+        lon_rho = dset.lon_rho.values
+        yx_fractional = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
+        y, x = np.round(yx_fractional).astype('i4')
+
+        # Compute depth info
+        logger.info(f'Compute depths from {fnames[0]}, grid cell x={x}, y={y}')
+        dset_point = dset.isel(ocean_time=0, xi_rho=x, eta_rho=y)
         zrho_star = compute_zrho_star(dset_point)
 
     # Extract profile info for each dataset
@@ -53,7 +58,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
         with xr.open_dataset(fname) as dset:
             logger.info(f'Horizontal interpolation')
             dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
-            dset = interpolate_xy(dset, dset_point.xi_rho.values, dset_point.eta_rho.values)
+            dset = select_xy(dset, x, y)
 
             logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
@@ -146,57 +151,47 @@ def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     return dens
 
 
-def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
+def select_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
     """
-    Interpolate fields in ROMS dataset
+    Select a single x, y point within ROMS dataset
 
-    The function uses bilinear interpolation for regular field variables, and
-    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
-    variables.
-
-    :param dset: ROMS dataset
-    :param lat: The latitude
-    :param lon: The longitude
-    :return: New dataset with all variables interpolated to the specified location
-    """
-    lat_rho = dset.lat_rho.values
-    lon_rho = dset.lon_rho.values
-
-    y, x = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
-
-    return interpolate_xy(dset, x, y)
-
-
-def interpolate_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
-    """
-    Interpolate fields in ROMS dataset
-
-    The function uses bilinear interpolation for regular field variables, and
-    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
-    variables.
+    The function interpolates u, v variables to midpoint values
 
     :param dset: ROMS dataset
     :param x: The dataset x coordinate
     :param y: The dataset y coordinate
-    :return: New dataset with all variables interpolated to the specified location
+    :return: Single-point dataset
     """
-    x_min = 0.5
-    y_min = 0.5
-    x_max = dset.dims['xi_rho'] - 1.5
-    y_max = dset.dims['eta_rho'] - 1.5
+
+    # Clip input to max/min values
+    x_min = 1
+    y_min = 1
+    x_max = dset.dims['xi_rho'] - 2
+    y_max = dset.dims['eta_rho'] - 2
     x = np.clip(x, x_min, x_max)
     y = np.clip(y, y_min, y_max)
 
+    # Drop coordinate variables, which would otherwise confuse the interpolation method
     cvars = {'xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'}
     dset = dset.drop_vars(cvars.intersection(dset.variables))
-    dset = dset.interp(
+
+    # Select grid cell, but treat u/v dimensions differently
+    dset = dset.isel(
         xi_rho=x,
         eta_rho=y,
-        xi_u=x - 0.5,
-        eta_u=int(y + 0.5),
-        xi_v=int(x + 0.5),
-        eta_v=y - 0.5,
+        xi_u=slice(x - 1, x + 1),
+        eta_u=y,
+        xi_v=x,
+        eta_v=slice(y - 1, y + 1),
     )
+
+    # Substitute NaN values with 0 for velocities
+    dset['u'] = dset['u'].fillna(0)
+    dset['v'] = dset['v'].fillna(0)
+
+    # Use midpoint velocity values
+    dset = dset.drop_vars(cvars.intersection(dset.variables))
+    dset = dset.interp(xi_u=0.5, eta_v=0.5)
 
     return dset
 
