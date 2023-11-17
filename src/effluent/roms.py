@@ -7,8 +7,8 @@ from __future__ import annotations
 import numpy as np
 import glob
 import xarray as xr
-import effluent.eos
-import effluent.numerics
+from . import eos
+from . import numerics
 import logging
 
 
@@ -43,7 +43,7 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
     with xr.open_dataset(fnames[0]) as dset:
         lat_rho = dset.lat_rho.values
         lon_rho = dset.lon_rho.values
-        yx_fractional = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
+        yx_fractional = numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
         y, x = np.round(yx_fractional).astype('i4')
 
         # Compute depth info
@@ -63,7 +63,7 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
             logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
-            dset = dset.assign(u=u, v=v)
+            dset = dset.assign(u=u, v=v).drop_vars('angle')
 
             dset = dset.assign(z_rho_star=zrho_star)
             dset = dset.assign(dens=compute_dens(dset))
@@ -89,7 +89,7 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
     return dset_combined
 
 
-def compute_zrho(dset: xr.Dataset) -> xr.Dataset:
+def compute_zrho(dset: xr.Dataset) -> xr.DataArray:
     """
     Compute z_rho variable from a ROMS dataset
 
@@ -144,9 +144,9 @@ def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     Compute variable ``dens`` from a ROMS dataset
 
     :param dset: ROMS dataset
-    :return: New dataset with ``dens`` added
+    :return: Density variable
     """
-    dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+    dens = eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     dens.name = 'dens'
     return dens
 
@@ -192,6 +192,7 @@ def select_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
     # Use midpoint velocity values
     dset = dset.drop_vars(cvars.intersection(dset.variables))
     dset = dset.interp(xi_u=0.5, eta_v=0.5)
+    dset = dset.drop_vars(['xi_u', 'eta_v'])
 
     return dset
 
