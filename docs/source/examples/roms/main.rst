@@ -20,7 +20,7 @@ variables *h*, *hc*, *Vtransform* and *Cs_r*. Details about the vertical
 coordinate transform is given in the
 `ROMS documentation <https://www.myroms.org/wiki/Vertical_S-coordinate>`_.
 
-Internally, ``effluent`` uses the built-in function ``open_location`` to
+Internally, ``effluent`` uses the built-in function ``load_location`` to
 extract the density and velocity at the given location. Here, we use the same
 function for visualization purposes.
 
@@ -32,7 +32,7 @@ function for visualization purposes.
     import matplotlib.pyplot as plt
 
     # Use built-in function to interpolate ROMS data
-    roms_spec = effluent.roms.open_location(
+    roms_spec = effluent.roms.load_location(
         file="forcing.nc",
         lat=59.03,
         lon=5.68,
