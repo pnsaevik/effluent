@@ -156,9 +156,13 @@ class Solver:
         """
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
-        event = lambda t, y: self.volume_change_ratio(t, y)
-        event.terminal = True
-        event.direction = -1
+        event_stagnation = lambda t, y: self.volume_change_ratio(t, y)
+        event_stagnation.terminal = True
+        event_stagnation.direction = -1
+
+        event_surface = lambda t, y: y[2]
+        event_surface.terminal = True
+        event_surface.direction = -1
 
         # noinspection PyUnresolvedReferences
         result = scipy.integrate.solve_ivp(
@@ -172,7 +176,7 @@ class Solver:
             atol=self.atol,
             first_step=self.first_step or None,
             max_step=self.max_step or np.inf,
-            events=event,
+            events=[event_stagnation, event_surface],
         )
 
         # noinspection PyUnresolvedReferences
