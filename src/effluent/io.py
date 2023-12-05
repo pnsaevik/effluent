@@ -37,6 +37,8 @@ class Pipe:
         :param conf: A dict of configuration parameters
         :return: An initialized object
         """
+        if isinstance(conf, Pipe):
+            return conf
         if 'csv' in conf:
             return Pipe.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
@@ -162,6 +164,8 @@ class Ambient:
         :return: An initialized object
         """
 
+        if isinstance(conf, Ambient):
+            return conf
         if 'csv' in conf:
             return Ambient.from_csv_file(**conf['csv'])
         elif 'nc' in conf:
