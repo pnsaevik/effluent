@@ -308,40 +308,63 @@ class Test_Output_from_config:
         )
 
     def test_option_csv_file(self, result):
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = io.StringIO()
         conf = dict(
             csv=dict(file=buf),
         )
 
         with effluent.io.Output.from_config(conf) as out:
-            out.write(time=0, result=result)
-            out.write(time=1, result=result)
+            out.write(time=time[0], result=result)
+            out.write(time=time[1], result=result)
             txt = buf.getvalue()
 
         assert txt.replace('\r', '') == (
             "release_time,t,x,y,z,u,v,w,density,radius\n"
-            "0,1000,1,3,5,7,9,2,4,6\n"
-            "0,2000,2,4,6,8,1,3,5,7\n"
-            "1,1000,1,3,5,7,9,2,4,6\n"
-            "1,2000,2,4,6,8,1,3,5,7\n"
+            "1970-01-01,1000,1,3,5,7,9,2,4,6\n"
+            "1970-01-01,2000,2,4,6,8,1,3,5,7\n"
+            "1970-01-01 00:20:00,1000,1,3,5,7,9,2,4,6\n"
+            "1970-01-01 00:20:00,2000,2,4,6,8,1,3,5,7\n"
         )
 
     def test_option_nc_file(self, result):
+        buf = xr.Dataset()
+        posix = np.array([0, 1200000])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[ms]')
+        conf = dict(nc=dict(file=buf))
+
+        with effluent.io.Output.from_config(conf) as out:
+            out.write(time=time[0], result=result)
+            out.write(time=time[1], result=result)
+
+        assert buf.z.positive == 'down'
+        assert buf.z.dims == ('index', )
+        assert buf.z.shape == (4, )
+        assert buf.z.values.tolist() == [5, 6, 5, 6]
+        assert set(buf.data_vars) == {
+            't', 'x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius', 'release_time'}
+        assert set(buf.coords) == set()
+        assert buf.release_time.values.tolist() == [0, 0, 1200, 1200]
+        assert buf.release_time.units == 'seconds since 1970-01-01'
+        assert buf.release_time.calendar == 'proleptic_gregorian'
+
+    def test_option_nc_file_when_ragged_output(self, result):
+        result2 = result.assign_coords(t=[3000, 4000])
+        result3 = xr.concat(objs=[result, result2], dim='t')
+
+        posix = np.array([0, 1200])
+        time = np.datetime64('1970-01-01') + posix.astype('timedelta64[s]')
         buf = xr.Dataset()
         conf = dict(
             nc=dict(file=buf),
         )
 
         with effluent.io.Output.from_config(conf) as out:
-            out.write(time=0, result=result)
-            out.write(time=1, result=result)
+            out.write(time=time[0], result=result)
+            out.write(time=time[1], result=result3)
 
-        assert buf.z.positive == 'down'
-        assert buf.z.dims == ('release_time', 't')
-        assert buf.z.shape == (2, 2)
-        assert buf.z.values.tolist() == [[5, 6], [5, 6]]
-        assert set(buf.data_vars) == {'x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius'}
-        assert set(buf.coords) == {'release_time', 't'}
+        assert buf['release_time'].size == 6
 
     def test_option_variables_when_nc_file(self, result):
         buf = xr.Dataset()
@@ -351,11 +374,11 @@ class Test_Output_from_config:
         )
 
         with effluent.io.Output.from_config(conf) as out:
-            out.write(time=0, result=result)
+            out.write(time=np.datetime64('1970-01-01'), result=result)
 
-        assert set(buf.data_vars) == {'x', 'y', 'z'}
-        assert set(buf.coords) == {'release_time'}
-        assert set(buf.dims) == {'release_time', 't'}
+        assert set(buf.data_vars) == {'x', 'y', 'z', 'release_time'}
+        assert set(buf.coords) == set()
+        assert set(buf.dims) == {'index'}
 
     def test_option_variables_when_csv_file(self, result):
         buf = io.StringIO()
@@ -365,7 +388,7 @@ class Test_Output_from_config:
         )
 
         with effluent.io.Output.from_config(conf) as out:
-            out.write(time=0, result=result)
+            out.write(time=np.datetime64('1970-01-01'), result=result)
 
             buf.seek(0)
             first_line = buf.readline()

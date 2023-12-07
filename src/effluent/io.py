@@ -438,8 +438,9 @@ class OutputNC(Output):
     def write(self, time, result):
         self.open()  # Lazy opening: Only effective if first time
 
-        result = result.assign_coords(release_time=time)
-        result = result.expand_dims('release_time')
+        time_var = xr.DataArray(np.broadcast_to(time, result['t'].shape), dims='index')
+        result = result.swap_dims(t='index')
+        result = result.assign(release_time=time_var)
 
         if self._blank_file:
             self._append_attributes(result)
@@ -457,7 +458,7 @@ class OutputNC(Output):
 
     @staticmethod
     def _append_attributes(r):
-        r.encoding['unlimited_dims'] = ['release_time']
+        r.encoding['unlimited_dims'] = ['index']
 
         r['x'].attrs['long_name'] = 'centerline x coordinate'
         r['y'].attrs['long_name'] = 'centerline y coordinate'
@@ -488,8 +489,7 @@ class OutputNC(Output):
         r['w'].attrs['positive'] = 'down'
         r['z'].attrs['positive'] = 'down'
 
-        r.coords['release_time'].attrs['long_name'] = 'time of release'
-        r.coords['release_time'].attrs['units'] = 's'
+        r['release_time'].attrs['long_name'] = 'time of release'
 
 
 def convert_to_nc_date(
