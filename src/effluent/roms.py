@@ -56,11 +56,11 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
     for fname in fnames:
         logger.info(f'Open file {fname}')
         with xr.open_dataset(fname) as dset:
-            logger.info(f'Horizontal interpolation')
+            logger.debug(f'Horizontal interpolation')
             dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
             dset = select_xy(dset, x, y)
 
-            logger.info(f'Rotate velocity vectors, compute density')
+            logger.debug(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
             dset = dset.assign(u=u, v=v).drop_vars('angle')
