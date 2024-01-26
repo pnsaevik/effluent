@@ -129,9 +129,9 @@ We plot the centerline of the plume in a 3D plot
     import xarray as xr
     import pandas as pd
     dset = xr.load_dataset('out.nc')
-    x = dset.x.isel(release_time=0).values
-    y = dset.y.isel(release_time=0).values
-    z = dset.z.isel(release_time=0).values
+    x = dset.x.isel(index=0).values
+    y = dset.y.isel(index=0).values
+    z = dset.z.isel(index=0).values
 
     # Plot stop position
     fig = plt.figure()
