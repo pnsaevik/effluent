@@ -112,7 +112,9 @@ class Model:
 
         # Do timestepping
         try:
-            for time in times:
+            for idx_time, time in enumerate(times):
+                if idx_time % 24 == 0:
+                    logger.info(f'Plume release time: {time}')
                 self.solver.set_init(self.pipe, time)
                 self.solver.set_ambient(self.ambient, time)
                 result = self.solver.solve()
