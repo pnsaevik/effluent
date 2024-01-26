@@ -154,8 +154,14 @@ class Solver:
 
         :return: An xarray.Dataset containing the solution
         """
-        steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
+        # Define initial conditions, and abort early if velocity is zero
+        y0 = self._initial_conditions()
+        data_vars_0 = {v: xr.Variable('t', [y0[i]]) for i, v in enumerate(self.varnames)}
+        if data_vars_0['u'] < 1e-7:
+            return xr.Dataset(data_vars=data_vars_0, coords=dict(t=[0]))
+
+        # Define events
         event_stagnation = lambda t, y: self.volume_change_ratio(t, y)
         event_stagnation.terminal = True
         event_stagnation.direction = -1
@@ -164,11 +170,13 @@ class Solver:
         event_surface.terminal = True
         event_surface.direction = -1
 
+        # Compute IVP problem
+        steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
         # noinspection PyUnresolvedReferences
         result = scipy.integrate.solve_ivp(
             fun=self.odefunc,
             t_span=steps[[0, -1]],
-            y0=self._initial_conditions(),
+            y0=y0,
             t_eval=steps,
             vectorized=True,
             method=self.method,

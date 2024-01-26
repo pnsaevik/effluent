@@ -2,6 +2,7 @@ import xarray as xr
 import numpy as np
 import pytest
 
+import effluent.io
 from effluent import solver
 
 
@@ -189,6 +190,14 @@ class Test_Solver_solve:
         assert np.isnan(self.sign_of_change(r, 'w'))   # Vertical bouncing behaviour
         assert np.isnan(self.sign_of_change(r, 'density'))  # Bouncing behaviour
         assert self.sign_of_change(r, 'radius') == 1   # Radius increase
+
+    def test_returns_single_element_if_zero_outflow_velocity(self, ambient_dset_still):
+        s = solver.Solver(step=10, stop=20)
+        s._pipe = xr.Dataset(dict(depth=100, u=0, w=0, dens=1000, diam=0.5))
+        s._ambient = ambient_dset_still
+        result = s.solve()
+        assert result['t'].values.tolist() == [0]
+        assert result['u'].values.tolist() == [0]
 
 
 class Test_Solver_from_config:
