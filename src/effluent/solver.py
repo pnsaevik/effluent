@@ -7,6 +7,10 @@ import numpy as np
 import scipy.integrate
 import effluent.io
 import xarray as xr
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Solver:
@@ -81,6 +85,12 @@ class Solver:
         :param time: Sampling time
         """
         self._ambient = ambient.select(time).compute()
+
+        # Check that the data is sorted by increasing depth
+        depth = self._ambient.depth.values
+        if not np.all(depth[:-1] < depth[1:]):
+            logger.error("Ambient conditions are not sorted by increasing depth")
+            raise ValueError("Ambient conditions are not sorted by increasing depth")
 
     def volume_change_ratio(self, t, y):
         """

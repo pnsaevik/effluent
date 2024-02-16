@@ -53,7 +53,7 @@ class Test_compute_azimuthal_vel:
 
 
 class Test_load_location:
-    def test_correct_profile_data(self):
+    def test_correct_profile_data_sorted_by_increasing_depth(self):
         dset = roms.load_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']
         try:

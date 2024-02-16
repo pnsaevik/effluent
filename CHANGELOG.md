@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Allow pipe conditions with zero flow
 
+## [1.4.1] - 2024-02-16
+### Fixed
+- Depth values from ROMS files are now loaded in increasing depth order
 
 ## [1.4.0] - 2023-11-15
 ### Changed
