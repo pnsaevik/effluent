@@ -71,6 +71,10 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
             dset = dset.assign_coords(depth=-dset['depth'])
             dset = dset.swap_dims({'s_rho': 'depth'})
 
+            # Flip depth coordinates so that numbers are in increasing depth order
+            assert zrho_star.values[0] < zrho_star.values[-1] < 0
+            dset = dset.isel(depth=slice(None, None, -1)).compute()
+
             profile_dsets.append(dset)
 
             logger.debug(f'Close file {fname}')
