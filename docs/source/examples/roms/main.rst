@@ -87,6 +87,7 @@ We can visualize the same data in a 3D plot:
     # Plot red "velocity pole"
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
+    ax.invert_zaxis()
     ax.plot(xs=[0, 0], ys=[0, 0], zs=zlims,
             color='r', linewidth=4, zorder=100)
 
