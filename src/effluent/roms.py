@@ -2,16 +2,22 @@
 The module contains functions for working with ROMS datasets
 """
 
+from __future__ import annotations
+
 import numpy as np
 import glob
 import xarray as xr
-import effluent.eos
-import effluent.numerics
+from . import eos
+from . import numerics
+import logging
 
 
-def open_location(file, lat, lon, az) -> xr.Dataset:
+logger = logging.getLogger(__name__)
+
+
+def load_location(file, lat, lon, az) -> xr.Dataset:
     """
-    Open ROMS dataset at specific location
+    Load ROMS dataset at specific location
 
     The output coordinates are 'time' and 'depth'. Fields are interpolated to the
     desired position, and the depth of each vertical level is computed. Current
@@ -24,130 +30,173 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     :return: An xarray.Dataset object
     """
 
-    # Select position
-    dset = open_dataset(file, z_rho=True, dens=True)
-    dset = interpolate_latlon(dset, lat, lon)
+    # Find all files
+    if isinstance(file, str):
+        fnames = sorted(glob.glob(file))
+    else:
+        fnames = file
 
-    # Set coordinates
-    dset = dset.rename(z_rho_star='depth', ocean_time='time')
-    dset = dset.swap_dims({'s_rho': 'depth'})
-
-    # Rotate velocity
-    u = compute_azimuthal_vel(dset, az * (np.pi / 180))
-    v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
-    dset = dset.assign(u=u, v=v)
-
-    return dset
-
-
-def open_dataset(file, z_rho=False, dens=False) -> xr.Dataset:
-    """
-    Open ROMS dataset
-
-    Variables are lazily loaded or computed.
-
-    :param file: Name of ROMS file(s), or wildcard pattern
-    :param z_rho: True if rho depths should be added (default: False)
-    :param dens: True if density should be added (implies z_rho, default: False)
-    :return: An xarray.Dataset object
-    """
-    fnames = sorted(glob.glob(file))
     if len(fnames) == 0:
         raise ValueError(f'No files found: "{fnames}"')
 
-    if len(fnames) == 1:
-        dset = xr.open_dataset(fnames[0])
-    else:
-        dset = xr.open_mfdataset(
-            paths=fnames,
-            chunks={'ocean_time': 1},
-            concat_dim='ocean_time',
-            compat='override',
-            data_vars='minimal',
-            coords='minimal',
-            combine='nested',
-            join='override',
-            combine_attrs='override',
-        )
+    # Find nearest grid cell
+    with xr.open_dataset(fnames[0]) as dset:
+        lat_rho = dset.lat_rho.values
+        lon_rho = dset.lon_rho.values
+        yx_fractional = numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
+        y, x = np.round(yx_fractional).astype('i4')
 
-    if z_rho or dens:
-        dset = add_zrho(dset)
+        # Compute depth info
+        logger.info(f'Compute depths from {fnames[0]}, grid cell x={x}, y={y}')
+        dset_point = dset.isel(ocean_time=0, xi_rho=x, eta_rho=y)
+        zrho_star = compute_zrho_star(dset_point)
 
-    if dens:
-        dset = add_dens(dset)
+    # Extract profile info for each dataset
+    profile_dsets = []
+    for fname in fnames:
+        logger.info(f'Open file {fname}')
+        with xr.open_dataset(fname) as dset:
+            logger.info(f'Horizontal interpolation')
+            dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
+            dset = select_xy(dset, x, y)
 
-    return dset
+            logger.info(f'Rotate velocity vectors, compute density')
+            u = compute_azimuthal_vel(dset, az * (np.pi / 180))
+            v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
+            dset = dset.assign(u=u, v=v).drop_vars('angle')
+
+            dset = dset.assign(z_rho_star=zrho_star)
+            dset = dset.assign(dens=compute_dens(dset))
+            dset = dset.rename(z_rho_star='depth', ocean_time='time')
+            dset = dset.assign_coords(depth=-dset['depth'])
+            dset = dset.swap_dims({'s_rho': 'depth'})
+
+            # Flip depth coordinates so that numbers are in increasing depth order
+            assert zrho_star.values[0] < zrho_star.values[-1] < 0
+            dset = dset.isel(depth=slice(None, None, -1)).compute()
+
+            profile_dsets.append(dset)
+
+            logger.debug(f'Close file {fname}')
+
+    # Concatenate datasets
+    logger.info('Concatenate datasets')
+    dset_combined = xr.concat(
+        objs=profile_dsets,
+        dim='time',
+        data_vars='minimal',
+        coords='minimal',
+        compat='override',
+        combine_attrs='override',
+    )
+
+    return dset_combined
 
 
-def add_zrho(dset: xr.Dataset) -> xr.Dataset:
+def compute_zrho(dset: xr.Dataset) -> xr.DataArray:
     """
-    Add z_rho variable to a ROMS dataset
+    Compute z_rho variable from a ROMS dataset
+
+    The z_rho variable is negative depth, with tidal variation
 
     :param dset: ROMS dataset
-    :return: New dataset with z_rho added
+    :return: The z_rho variable
+    """
+    vtrans = dset['Vtransform']
+    z_rho_star = dset['z_rho_star']
+
+    if vtrans == 1:
+        z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
+    elif vtrans == 2:
+        z_rho = dset.zeta + z_rho_star * (dset.zeta / dset.h + 1)
+    else:
+        raise ValueError(f'Unknown Vtransform: {vtrans}')
+
+    dims = [d for d in ['ocean_time', 's_rho', 'eta_rho', 'xi_rho'] if d in z_rho.dims]
+    z_rho = z_rho.transpose(*dims)
+    z_rho.name = 'z_rho'
+    return z_rho
+
+
+def compute_zrho_star(dset: xr.Dataset) -> xr.DataArray:
+    """
+    Compute z_rho_star variable from a ROMS dataset
+
+    The z_rho_star variable is negative depth, without tidal variation
+
+    :param dset: ROMS dataset
+    :return: The z_rho_star variable
     """
     vtrans = dset['Vtransform']
 
     if vtrans == 1:
         z_rho_star = dset.hc * (dset.s_rho - dset.Cs_r) + dset.Cs_r * dset.h
-        z_rho = z_rho_star + dset.zeta * (1 + z_rho_star / dset.h)
     elif vtrans == 2:
         z_rho_0 = (dset.hc * dset.s_rho + dset.Cs_r * dset.h) / (dset.hc + dset.h)
         z_rho_star = z_rho_0 * dset.h
-        z_rho = dset.zeta + z_rho_0 * (dset.zeta + dset.h)
     else:
         raise ValueError(f'Unknown Vtransform: {vtrans}')
 
-    return dset.assign_coords(
-        z_rho=z_rho.transpose('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),
-        z_rho_star=z_rho_star.transpose('s_rho', 'eta_rho', 'xi_rho'),
-    )
+    dims = [d for d in ['s_rho', 'eta_rho', 'xi_rho'] if d in z_rho_star.dims]
+    z_rho_star = z_rho_star.transpose(*dims)
+    z_rho_star.name = 'z_rho_star'
+    return z_rho_star
 
 
-def add_dens(dset: xr.Dataset) -> xr.Dataset:
+def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     """
-    Add variable ``dens`` to a ROMS dataset
+    Compute variable ``dens`` from a ROMS dataset
 
     :param dset: ROMS dataset
-    :return: New dataset with ``dens`` added
+    :return: Density variable
     """
-    dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
-    return dset.assign_coords(dens=dens)
+    dens = eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+    dens.name = 'dens'
+    return dens
 
 
-def interpolate_latlon(dset: xr.Dataset, lat, lon) -> xr.Dataset:
+def select_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
     """
-    Interpolate fields in ROMS dataset
+    Select a single x, y point within ROMS dataset
 
-    The function uses bilinear interpolation for regular field variables, and
-    unidirectional interpolation (which preserves divergence) for the ``u`` and ``v``
-    variables.
+    The function interpolates u, v variables to midpoint values
 
     :param dset: ROMS dataset
-    :param lat: The latitude
-    :param lon: The longitude
-    :return: New dataset with all variables interpolated to the specified location
+    :param x: The dataset x coordinate
+    :param y: The dataset y coordinate
+    :return: Single-point dataset
     """
-    lat_rho = dset.lat_rho.values
-    lon_rho = dset.lon_rho.values
 
-    y, x = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
-
-    x_min = 0.5
-    y_min = 0.5
-    x_max = dset.dims['xi_rho'] - 1.5
-    y_max = dset.dims['eta_rho'] - 1.5
+    # Clip input to max/min values
+    x_min = 1
+    y_min = 1
+    x_max = dset.dims['xi_rho'] - 2
+    y_max = dset.dims['eta_rho'] - 2
     x = np.clip(x, x_min, x_max)
     y = np.clip(y, y_min, y_max)
 
-    dset = dset.interp(
+    # Drop coordinate variables, which would otherwise confuse the interpolation method
+    cvars = {'xi_rho', 'xi_u', 'xi_v', 'eta_rho', 'eta_u', 'eta_v'}
+    dset = dset.drop_vars(cvars.intersection(dset.variables))
+
+    # Select grid cell, but treat u/v dimensions differently
+    dset = dset.isel(
         xi_rho=x,
         eta_rho=y,
-        xi_u=x - 0.5,
-        eta_u=int(y + 0.5),
-        xi_v=int(x + 0.5),
-        eta_v=y - 0.5,
+        xi_u=slice(x - 1, x + 1),
+        eta_u=y,
+        xi_v=x,
+        eta_v=slice(y - 1, y + 1),
     )
+
+    # Substitute NaN values with 0 for velocities
+    dset['u'] = dset['u'].fillna(0)
+    dset['v'] = dset['v'].fillna(0)
+
+    # Use midpoint velocity values
+    dset = dset.drop_vars(cvars.intersection(dset.variables))
+    dset = dset.interp(xi_u=0.5, eta_v=0.5)
+    dset = dset.drop_vars(['xi_u', 'eta_v'])
 
     return dset
 
