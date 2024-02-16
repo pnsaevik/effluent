@@ -138,14 +138,17 @@ We plot the centerline of the plume in a 3D plot
     # Plot stop position
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d', computed_zorder=False)
-    ax.plot(xs=[x[-1]] * 2, ys=[y[-1]] * 2, zs=-z[[0, -1]],
-            color='r', linestyle='--', linewidth=4, zorder=-1)
+    ax.invert_zaxis()
+    for idx in [1, 2, 3, 5, 7, -1]:
+        ax.plot(xs=[x[idx]] * 2, ys=[y[idx]] * 2, zs=z[[0, idx]],
+                color='r', linestyle='--', linewidth=4, zorder=-1)
 
     # Plot trajectory
-    ax.plot(x, y, -z, color='k', linewidth=2)
+    ax.plot(x, y, z, color='k', linewidth=2)
+    ax.plot(x, y, z[0], color='k', linewidth=.5)
 
     # Annotate plot
-    ax.set(xticks=range(4), yticks=range(-4, 1), yticklabels=[])
+    ax.set(xticks=range(10), yticks=range(-5, 1), yticklabels=[])
     ax.view_init(elev=10., azim=100)
     ax.set_xlabel('Horizontal distance from outlet (m)')
     ax.set_zlabel('Depth (m)')
@@ -153,7 +156,7 @@ We plot the centerline of the plume in a 3D plot
         'Final position:\n'
         f'X: {x[-1]: .3}\n'
         f'Y: {y[-1]: .3}\n'
-        f'Z: {-z[-1]: .3}',
+        f'Z: {z[-1]: .3}',
         bbox=dict(color='w'),
     )
 
