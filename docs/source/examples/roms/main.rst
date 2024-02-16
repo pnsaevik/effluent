@@ -49,6 +49,7 @@ function for visualization purposes.
 
     # Prepare plot
     ax1 = plt.gcf().add_axes([0.1, 0.1, .8, .8])
+    ax1.invert_yaxis()
     ax2 = ax1.twiny()
 
     # Plot velocity and density
