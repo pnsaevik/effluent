@@ -8,8 +8,6 @@ import logging
 import tomli as toml
 import effluent.io
 import effluent.solver
-import effluent.io
-import effluent.solver
 import xarray as xr
 
 logger = logging.getLogger(__name__)
