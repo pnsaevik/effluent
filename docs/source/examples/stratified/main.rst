@@ -17,7 +17,6 @@ has constant outflow rates. More lines can be added if the outflow
 properties are changing with time.
 
 .. literalinclude:: pipe.csv
-    :language: toml
 
 |
 
@@ -27,7 +26,6 @@ that change with time. Sorting order is not critical, but
 we recommend sorting by depth, then by time.
 
 .. literalinclude:: ambient.csv
-    :language: toml
 
 |
 
