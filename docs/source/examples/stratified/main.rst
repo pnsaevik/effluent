@@ -3,9 +3,30 @@ Buoyant jet in stratified ambient
 =======================================
 
 In this example, a horizontal freshwater jet is released into a stratified
-water column. The ``config.toml`` file looks like this:
+water column. The properties of the pipe outflow and the ambient water
+masses are specified in external csv files. The ``config.toml`` file looks
+like this:
 
 .. literalinclude:: config.toml
+    :language: toml
+
+|
+
+Contents of ``pipe.csv`` is shown below. For simplicity, this example
+has constant outflow rates. More lines can be added if the outflow
+properties are changing with time.
+
+.. literalinclude:: pipe.csv
+    :language: toml
+
+|
+
+Contents of ``ambient.csv`` is shown below. More lines can be added
+to specify further stratification levels, or to specify properties
+that change with time. Sorting order is not critical, but
+we recommend sorting by depth, then by time.
+
+.. literalinclude:: ambient.csv
     :language: toml
 
 |
