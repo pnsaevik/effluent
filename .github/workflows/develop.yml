@@ -11,7 +11,27 @@ jobs:
         uses: actions/checkout@v4
       - name: Install package
         run: pip install .
+      - name: "Command-line example"
+        run: effluent ./docs/source/examples/jet/config.toml && cat out.csv
       - name: Install test suite
         run: pip install pytest
       - name: Run pytest
         run: pytest
+
+  run_sphinx:
+    runs-on: ubuntu-latest
+    name: Build sphinx
+    needs: run_pytest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install package
+        run: pip install .
+      - name: Install sphinx
+        run: pip install sphinx
+      - name: Build documentation
+        run: sphinx-build -v -b html -W --keep-going -n ./docs/source/ ./docs/build/
+      - name: Run sphinx doctest
+        run: sphinx-build -M doctest ./docs/source/ ./docs/build/
+      - name: Run sphinx linkcheck
+        run: sphinx-build -M linkcheck ./docs/source/ ./docs/build/
