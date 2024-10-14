@@ -1,0 +1,17 @@
+name: Development workflow
+
+on: push
+
+jobs:
+  run_pytest:
+    runs-on: ubuntu-latest
+    name: Run pytest
+    steps:
+      - name: Checkout
+        uses: actions/checkout
+      - name: Install package
+        run: pip install .
+      - name: Install test suite
+        run: pip install pytest
+      - name: Run pytest
+        run: pytest
