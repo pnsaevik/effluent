@@ -26,8 +26,6 @@ class Pipe:
 
     def __init__(self, dset):
         self._dset = dset
-        self._time_min = dset.time[0].values
-        self._time_max = dset.time[-1].values
 
     @staticmethod
     def from_config(conf) -> "Pipe":
@@ -106,13 +104,31 @@ class Pipe:
         :return: An xarray.Dataset object with variables ``depth``, ``u``, ``w``,
             ``dens`` and ``diam``.
         """
+        return _interp_clipped_time(self._dset, time)
 
-        if self._dset.sizes['time'] == 1:
-            # No interpolation is possible if there is only 1 time entry
-            return self._dset.isel(time=0)
 
-        clipped_time = np.clip(time, self._time_min, self._time_max)
-        return self._dset.interp(time=clipped_time)
+def _interp_clipped_time(dset, time):
+    """
+    Interpolate dataset to the given time
+
+    Requires a coordinate variable in the dataset named "time". If the selected
+    time is outside the given interval, the time is clipped to the valid
+    interval before interpolation.
+
+    :param dset: Input dataset
+    :param time: Time to select, should be convertible to numpy datetime64
+    :return: The dataset interpolated to the given time value
+    """
+
+    if dset.sizes['time'] == 1:
+        # No interpolation is possible if there is only 1 time entry
+        return dset.isel(time=0)
+
+    np_time = np.asarray(time, dtype=dset.time.dtype)
+    t_min = dset.time[0].values
+    t_max = dset.time[-1].values
+    clipped_time = np.asarray(np.clip(np_time, t_min, t_max))
+    return dset.interp(time=clipped_time)
 
 
 def read_csv(file) -> pd.DataFrame:
@@ -243,16 +259,9 @@ class AmbientXarray(Ambient):
 
     def __init__(self, dset):
         self._dset = dset
-        self._tmin = dset.time[0].values
-        self._tmax = dset.time[-1].values
 
     def select(self, time) -> xr.Dataset:
-        if self._dset.sizes['time'] == 1:
-            # No interpolation is possible if there is only 1 time entry
-            return self._dset.isel(time=0)
-
-        clipped_time = np.clip(time, self._tmin, self._tmax)
-        return self._dset.interp(time=clipped_time)
+        return _interp_clipped_time(self._dset, time)
 
 
 class Output:
@@ -644,8 +653,6 @@ class AmbientRoms(Ambient):
             dset = dset.drop_vars(drop_vars)
 
             self.dset = dset
-            self._tmin = dset.time[0].values
-            self._tmax = dset.time[-1].values
 
     def close(self):
         if self.dset is not None:
@@ -654,6 +661,4 @@ class AmbientRoms(Ambient):
 
     def select(self, time) -> xr.Dataset:
         self.open()
-
-        clipped_time = np.clip(time, self._tmin, self._tmax)
-        return self.dset.interp(time=clipped_time)
+        return _interp_clipped_time(self.dset, time)

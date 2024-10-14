@@ -288,6 +288,40 @@ class Test_Ambient_from_config:
             assert dset.dens.dims == ('depth', )
 
 
+class Test_AmbientXarray_select:
+    def test_selects_available_time_when_single_integer_time_entry(self):
+        dset = xr.Dataset(coords=dict(time=[10]))
+        obj = effluent.io.AmbientXarray(dset)
+        ddset = obj.select(time=20)
+        assert ddset.time == 10
+
+    def test_interpolates_time_when_float_time_entry(self):
+        dset = xr.Dataset(
+            data_vars=dict(
+                dens=xr.DataArray(data=[1., 2.], dims='time'),
+            ),
+            coords=dict(time=[10., 20.]),
+        )
+        obj = effluent.io.AmbientXarray(dset)
+        ddset = obj.select(time=15)
+        assert ddset.time == 15
+        assert ddset.dens == 1.5
+
+    def test_interpolates_time_when_numpy_time_entry(self):
+        dset = xr.Dataset(
+            data_vars=dict(
+                dens=xr.DataArray(data=[1., 2.], dims='time'),
+            ),
+            coords=dict(
+                time=np.asarray(['2024-01', '2024-01-03'], 'datetime64[ns]'),
+            ),
+        )
+        obj = effluent.io.AmbientXarray(dset)
+        ddset = obj.select(time='2024-01-02')
+        assert ddset.time == np.datetime64('2024-01-02')
+        assert ddset.dens == 1.5
+
+
 class Test_Output_from_config:
     @pytest.fixture()
     def result(self):
