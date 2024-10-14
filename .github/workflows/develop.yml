@@ -8,7 +8,7 @@ jobs:
     name: Run pytest
     steps:
       - name: Checkout
-        uses: actions/checkout
+        uses: actions/checkout@v4
       - name: Install package
         run: pip install .
       - name: Install test suite
