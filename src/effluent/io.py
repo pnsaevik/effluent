@@ -63,7 +63,7 @@ class Pipe:
 
     @staticmethod
     def from_dataframe(df) -> "Pipe":
-        df['time'] = df['time'].values.astype('datetime64')
+        df['time'] = df['time'].values.astype('datetime64[ns]')
         df = df.set_index('time')
         dset = xr.Dataset.from_dataframe(df)
         return Pipe.from_dataset(dset)
