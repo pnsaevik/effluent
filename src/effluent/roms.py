@@ -170,8 +170,8 @@ def select_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
     # Clip input to max/min values
     x_min = 1
     y_min = 1
-    x_max = dset.dims['xi_rho'] - 2
-    y_max = dset.dims['eta_rho'] - 2
+    x_max = dset.sizes['xi_rho'] - 2
+    y_max = dset.sizes['eta_rho'] - 2
     x = np.clip(x, x_min, x_max)
     y = np.clip(y, y_min, y_max)
 

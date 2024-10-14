@@ -107,7 +107,7 @@ class Pipe:
             ``dens`` and ``diam``.
         """
 
-        if self._dset.dims['time'] == 1:
+        if self._dset.sizes['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
 
@@ -247,7 +247,7 @@ class AmbientXarray(Ambient):
         self._tmax = dset.time[-1].values
 
     def select(self, time) -> xr.Dataset:
-        if self._dset.dims['time'] == 1:
+        if self._dset.sizes['time'] == 1:
             # No interpolation is possible if there is only 1 time entry
             return self._dset.isel(time=0)
 
@@ -521,7 +521,7 @@ def write_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     unlimited_dims = xr_dset.encoding.get('unlimited_dims', [])
 
     # Write dimensions
-    for name, size in xr_dset.dims.items():
+    for name, size in xr_dset.sizes.items():
         if name in unlimited_dims:
             size = None
         nc_dset.createDimension(name, size)
@@ -581,7 +581,7 @@ def append_xr_to_nc(xr_dset: xr.Dataset, nc_dset: nc.Dataset):
     unlim_vars = [k for k, v in xr_dset.variables.items() if v.dims[0] == unlim_dim]
 
     num_old_items = nc_dset.dimensions[unlim_dim].size
-    num_new_items = xr_dset.dims.get(unlim_dim, 0)
+    num_new_items = xr_dset.sizes.get(unlim_dim, 0)
     num_items = num_old_items + num_new_items
 
     # Append data
