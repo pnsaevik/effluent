@@ -162,6 +162,9 @@ class Solver:
         pre-determined output points. The variable names are ``x``, ``y``, ``z``, ``u``,
         ``v``, ``w``, ``density``, ``radius``, all indexed by the coordinate ``t``.
 
+        The returned dataset also contains the secondary variable ``dilution``,
+        indexed by the coordinate ``t``.
+
         :return: An xarray.Dataset containing the solution
         """
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
@@ -195,6 +198,10 @@ class Solver:
 
         # Organize result
         data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
+        data_vars['dilution'] = xr.Variable(
+            data=self._dilution_factor(res_y),
+            dims='t',
+        )
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
 
     def _ambient_data(self, depth):
@@ -216,6 +223,15 @@ class Solver:
         d0 = pipe.dens.values.item()
         r0 = 0.5 * pipe.diam.values.item()
         return np.array([x0, y0, z0, u0, v0, w0, d0, r0], 'f8')
+
+    def _dilution_factor(self, y_in):
+        x0, y0, z0, u0, v0, w0, d0, r0 = self._initial_conditions()
+        x, y, z, u, v, w, d, r = y_in
+        dilution = (
+            ((r * r) / (r0 * r0)) *
+            (np.sqrt(u*u + v*v + w*w) / np.sqrt(u0*u0 + v0*v0 + w0*w0))
+        )
+        return dilution
 
     def odefunc(self, t, y):
         """

@@ -119,6 +119,11 @@ class Test_Solver_solve:
     def test_returns_xr_dataset_when_horz_still(self, result_horz_still):
         assert isinstance(result_horz_still, xr.Dataset)
 
+    def test_dilution_increases_when_horz_still(self, result_horz_still):
+        dilution = result_horz_still['dilution'].values
+        assert result_horz_still['dilution'].dims == result_horz_still['radius'].dims
+        assert np.all(np.diff(dilution) > 0)
+
     def test_variables_change_as_expected_when_horz_still(self, result_horz_still):
         r = result_horz_still
         assert self.sign_of_change(r, 'x') == 1
