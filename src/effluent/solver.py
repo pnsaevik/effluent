@@ -8,9 +8,11 @@ import scipy.integrate
 import effluent.io
 import xarray as xr
 import logging
+from collections import namedtuple
 
 
 logger = logging.getLogger(__name__)
+SolverVars = namedtuple('SolverVars', ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius'])
 
 
 class Solver:
@@ -39,8 +41,6 @@ class Solver:
     def __init__(self, beta_n=0.34, beta_t=0.17, mass_n=1.0, mass_t=0.18, method="RK45",
                  rtol=1e-3, atol=1e-6, first_step=0, max_step=0, start=0, stop=60,
                  step=1):
-        self.varnames = ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius']
-
         # Model parameters
         self.beta_n = beta_n
         self.beta_t = beta_t
@@ -109,8 +109,7 @@ class Solver:
         # Rename input variables
         # noinspection PyUnusedLocal
         t = t
-        y_in = y
-        x, y, z, u, v, w, rho, R = y_in
+        sv = SolverVars(*y)
 
         # Define coefficients
         beta_t = self.beta_t          # Entrainment coefficient, co-flow
@@ -120,20 +119,20 @@ class Solver:
         g = 9.81                      # Acceleration of gravity
 
         # Extract ambient velocity and density
-        rho_a, u_a, v_a = self._ambient_data(z)
+        rho_a, u_a, v_a = self._ambient_data(sv.z)
 
         # Compute added mass coefficient
-        squared_horizontal_speed = u*u + v*v
-        w2 = w*w
+        squared_horizontal_speed = sv.u * sv.u + sv.v * sv.v
+        w2 = sv.w * sv.w
         squared_speed = squared_horizontal_speed + w2
         K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
 
         # Compute flow difference in tangential and normal direction
-        delta_u = u - u_a
-        delta_v = v - v_a
+        delta_u = sv.u - u_a
+        delta_v = sv.v - v_a
         squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
         speed = np.sqrt(squared_speed)
-        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
+        delta_u_t = np.abs(speed - (sv.u * u_a + sv.v * v_a) / speed)
         sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
         delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
 
@@ -141,15 +140,16 @@ class Solver:
         ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
 
         # Conservation of volume
-        ddt_log_R2 = 2 * ddt_R / R
-        rho_ratio = rho_a / rho
+        ddt_log_R2 = 2 * ddt_R / sv.radius
+        rho_ratio = rho_a / sv.density
         gravity_factor = K * (1 - rho_ratio) * g
-        nominator = ddt_log_R2 + gravity_factor * w / squared_speed
-        denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
+        nominator = ddt_log_R2 + gravity_factor * sv.w / squared_speed
+        denominator = rho_ratio * (1 - (sv.u * u_a + sv.v * v_a) / squared_speed) + 1
         ddt_log_V = nominator / denominator
 
-        return (ddt_log_V, rho_a, rho, rho_ratio, delta_u, delta_v, u, v, w,
-                gravity_factor, ddt_R)
+        return (
+            ddt_log_V, rho_a, sv.density, rho_ratio, delta_u, delta_v, sv.u,
+            sv.v, sv.w, gravity_factor, ddt_R)
 
     def solve(self) -> xr.Dataset:
         """
@@ -197,7 +197,8 @@ class Solver:
             res_y = np.concatenate([res_y, evt_y[0].T], axis=1)
 
         # Organize result
-        data_vars = {v: xr.Variable('t', res_y[i]) for i, v in enumerate(self.varnames)}
+        sv = SolverVars(*res_y)
+        data_vars = {k: xr.Variable('t', v) for k, v in sv._asdict().items()}
         data_vars['dilution'] = xr.Variable(
             data=self._dilution_factor(res_y),
             dims='t',
@@ -214,22 +215,25 @@ class Solver:
 
     def _initial_conditions(self):
         pipe = self._pipe
-        x0 = 0
-        y0 = 0
-        z0 = pipe.depth.values.item()
-        u0 = pipe.u.values.item()
-        v0 = 0
-        w0 = pipe.w.values.item()
-        d0 = pipe.dens.values.item()
-        r0 = 0.5 * pipe.diam.values.item()
-        return np.array([x0, y0, z0, u0, v0, w0, d0, r0], 'f8')
+        init_values = SolverVars(
+            x=0,
+            y=0,
+            z=pipe.depth.values.item(),
+            u=pipe.u.values.item(),
+            v=0,
+            w=pipe.w.values.item(),
+            density=pipe.dens.values.item(),
+            radius=0.5 * pipe.diam.values.item(),
+        )
+        return np.array(init_values, 'f8')
 
     def _dilution_factor(self, y_in):
-        x0, y0, z0, u0, v0, w0, d0, r0 = self._initial_conditions()
-        x, y, z, u, v, w, d, r = y_in
+        sv0 = SolverVars(*self._initial_conditions())
+        sv1 = SolverVars(*y_in)
         dilution = (
-            ((r * r) / (r0 * r0)) *
-            (np.sqrt(u*u + v*v + w*w) / np.sqrt(u0*u0 + v0*v0 + w0*w0))
+            ((sv1.radius * sv1.radius) / (sv0.radius * sv0.radius)) *
+            (np.sqrt(sv1.u * sv1.u + sv1.v * sv1.v + sv1.w * sv1.w) /
+             np.sqrt(sv0.u * sv0.u + sv0.v * sv0.v + sv0.w * sv0.w))
         )
         return dilution
 
@@ -261,5 +265,8 @@ class Solver:
         ddt_y = v
         ddt_z = w
 
-        ddt_y = np.stack([ddt_x, ddt_y, ddt_z, ddt_u, ddt_v, ddt_w, ddt_rho, ddt_R])
-        return ddt_y
+        ddt = SolverVars(
+            x=ddt_x, y=ddt_y, z=ddt_z, u=ddt_u, v=ddt_v, w=ddt_w,
+            density=ddt_rho, radius=ddt_R,
+        )
+        return np.stack(ddt)
