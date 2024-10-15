@@ -1,6 +1,9 @@
 name: Development workflow
 
-on: push
+on:
+  push: # Triggers on push to any branch
+  schedule:
+    - cron: '45 5 * * 1'  # Run every Monday at 05:45 UTC
 
 jobs:
   run_pytest:
