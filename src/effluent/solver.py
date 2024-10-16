@@ -8,7 +8,6 @@ import scipy.integrate
 import effluent.io
 import xarray as xr
 import logging
-import typing
 from collections import namedtuple
 
 
@@ -38,11 +37,12 @@ class Solver:
     :param start: Time (in seconds) of first trajectory point
     :param stop: Time (in seconds) of last trajectory point
     :param step: Time (in seconds) between trajectory points
+    :param tracers: Name of tracer variables to track during simulation
     """
 
     def __init__(self, beta_n=0.34, beta_t=0.17, mass_n=1.0, mass_t=0.18, method="RK45",
                  rtol=1e-3, atol=1e-6, first_step=0, max_step=0, start=0, stop=60,
-                 step=1):
+                 step=1, tracers=()):
         # Model parameters
         self.beta_n = beta_n
         self.beta_t = beta_t
@@ -67,8 +67,8 @@ class Solver:
         # Internal dataset to hold the ambient conditions
         self._ambient = xr.Dataset()
 
-        # Internal namedtuple class that represents tracked tracers
-        self._tracer_dtype = namedtuple('Tracers', [])  # type: typing.Any
+        # Internal list of tracked tracer variables
+        self._tracers = tuple(tracers)
 
     def set_init(self, pipe: effluent.io.Pipe, time):
         """
@@ -100,27 +100,6 @@ class Solver:
             logger.error("Ambient conditions are not sorted by increasing depth")
             raise ValueError("Ambient conditions are not sorted by increasing depth")
 
-    def set_tracers(self, varnames: list[str]):
-        """
-        Set tracer variables
-
-        Tracers are variables whose value should be tracked during
-        simulation. Any intensive (i.e. concentration-like) variable
-        can be included, such as salinity, nitrogen concentration or even
-        temperature.
-
-        Mixing properties should be proportional to volume. For instance, if
-        two water volumes V1 and V2 are mixed, and their tracer amount is T1 and
-        T2, respectively, the mixed tracer amount should be
-        (T1 * V1 + T2 * V2) / (V1 + V2).
-
-        Variable names should match the variable names in the datasets for
-        initial and ambient conditions.
-
-        :param varnames: Names of variables to include
-        """
-        self._tracer_dtype = namedtuple('Tracers', list(varnames))
-
     def volume_change_ratio(self, t, y):
         """
         Compute the time derivative of log(V) according to :eq:`sol_voldef`.
@@ -146,21 +125,21 @@ class Solver:
         :return: Numpy array to be fed into scipy ODE solver
         """
         primary_vars = list(solver_vars)[:-1]
-        tracer_vars = list(solver_vars.tracers)
+        tracer_vars = list(solver_vars.tracers.values())
         return np.stack(primary_vars + tracer_vars)
 
-    @staticmethod
-    def _unpack(ode_array: np.ndarray) -> SolverVars:
+    def _unpack(self, ode_array: np.ndarray) -> SolverVars:
         """
         Unpack an ODE array to solver variables and tracer variables
 
         :param ode_array: A numpy array designed to work with scipy ODE solvers
         :return: A set of solver variables
         """
-        num_solver_vars = len(SolverVars._fields)
-        primary_vars = ode_array[:num_solver_vars]
-        tracer_vars = ode_array[num_solver_vars:]
-        solver_vars = SolverVars(*primary_vars, tracer_vars)
+        num_primary_vars = len(SolverVars._fields) - 1
+        primary_vars = ode_array[:num_primary_vars]
+        tracer_vars = ode_array[num_primary_vars:]
+        tracer_dict = dict(zip(self._tracers, tracer_vars))
+        solver_vars = SolverVars(*primary_vars, tracers=tracer_dict)
         return solver_vars
 
     def _odefunc(self, solver_vars: SolverVars) -> tuple[SolverVars, np.ndarray]:
@@ -196,7 +175,7 @@ class Solver:
         w = solver_vars.w
 
         # Extract ambient velocity and density
-        rho_a, u_a, v_a = self._ambient_data(z)
+        rho_a, u_a, v_a, tracer_ambients = self._ambient_data(z)
 
         # Compute added mass coefficient
         squared_horizontal_speed = u*u + v*v
@@ -227,6 +206,12 @@ class Solver:
         # Conservation of mass
         ddt_rho = ddt_log_V * (rho_a - solver_vars.density)
 
+        # Tracers (similar to conservation of mass)
+        ddt_tracers = {}
+        for tracer_name, tracer_ambient in tracer_ambients.items():
+            tracer_value = solver_vars.tracers[tracer_name]
+            ddt_tracers[tracer_name] = ddt_log_V * (tracer_ambient - tracer_value)
+
         # Conservation of momentum
         prefix = -ddt_log_V * rho_ratio
         ddt_u = prefix * delta_u
@@ -248,7 +233,7 @@ class Solver:
             w=ddt_w,
             density=ddt_rho,
             radius=ddt_R,
-            tracers=self._tracer_dtype(),
+            tracers=ddt_tracers,
         )
 
         return odefunc_vars, ddt_log_V
@@ -317,20 +302,29 @@ class Solver:
         :return: Dict of named variables
         """
         names = list(SolverVars._fields)[:-1]
-        # noinspection PyProtectedMember
-        names += list(self._tracer_dtype._fields)
+        names += list(self._tracers)
         return dict(zip(names, y))
 
     def _ambient_data(self, depth):
         amb = self._ambient
-        d_a = np.interp(depth, amb.depth.values, amb.dens.values)
-        u_a = np.interp(depth, amb.depth.values, amb.u.values)
-        v_a = np.interp(depth, amb.depth.values, amb.v.values)
+        depths = amb.depth.values
+        d_a = np.interp(depth, depths, amb.dens.values)
+        u_a = np.interp(depth, depths, amb.u.values)
+        v_a = np.interp(depth, depths, amb.v.values)
 
-        return np.array([d_a, u_a, v_a])
+        t_a = {}
+        for tracer_name in self._tracers:
+            if tracer_name in amb.variables:
+                values = amb[tracer_name].values
+                t_a[tracer_name] = np.interp(depth, depths, values)
+            else:
+                t_a[tracer_name] = np.zeros(np.shape(depth))
+
+        return d_a, u_a, v_a, t_a
 
     def _initial_conditions(self):
         pipe = self._pipe
+
         init_values = SolverVars(
             x=0,
             y=0,
@@ -340,7 +334,7 @@ class Solver:
             w=pipe.w.values.item(),
             density=pipe.dens.values.item(),
             radius=0.5 * pipe.diam.values.item(),
-            tracers=self._tracer_dtype(),
+            tracers={k: pipe[k].values.item() for k in self._tracers},
         )
         return self._pack(init_values)
 

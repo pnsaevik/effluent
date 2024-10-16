@@ -8,7 +8,7 @@ from effluent import solver
 class Test_Solver_solve:
     @pytest.fixture(scope='class')
     def pipe_dset_horz(self):
-        return xr.Dataset(dict(depth=100, u=1, w=0, dens=1000, diam=0.5))
+        return xr.Dataset(dict(depth=100, u=1, w=0, dens=1000, diam=0.5, nox=1e6))
 
     @pytest.fixture(scope='class')
     def pipe_dset_light(self):
@@ -74,6 +74,13 @@ class Test_Solver_solve:
         return s.solve()
 
     @pytest.fixture(scope='class')
+    def result_horz_still_tracer(self, pipe_dset_horz, ambient_dset_still):
+        s = solver.Solver(step=20, stop=200, tracers=['nox'])
+        s._pipe = pipe_dset_horz
+        s._ambient = ambient_dset_still
+        return s.solve()
+
+    @pytest.fixture(scope='class')
     def result_decl_still(self, pipe_dset_decl, ambient_dset_still):
         s = solver.Solver(step=10, stop=20)
         s._pipe = pipe_dset_decl
@@ -118,6 +125,16 @@ class Test_Solver_solve:
 
     def test_returns_xr_dataset_when_horz_still(self, result_horz_still):
         assert isinstance(result_horz_still, xr.Dataset)
+
+    def test_tracer_concentration_declines(self, result_horz_still_tracer):
+        assert 'nox' in result_horz_still_tracer.variables
+
+        tracer_values = result_horz_still_tracer['nox'].values
+        assert tracer_values[0] == 1e6
+        assert np.all(tracer_values > 0)
+
+        tracer_diff = np.diff(tracer_values)
+        assert np.all(tracer_diff < 0)
 
     def test_dilution_increases_when_horz_still(self, result_horz_still):
         dilution = result_horz_still['dilution'].values
