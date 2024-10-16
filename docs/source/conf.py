@@ -17,6 +17,7 @@ def setup(app: Sphinx):
             Field('units', label='Units', has_arg=False, names=('units',)),
         ]
     )
+    app.add_config_value('package_version', release, 'env')
 
 
 # Configuration file for the Sphinx documentation builder.
@@ -50,7 +51,10 @@ def getversion():
 
 
 release = getversion()
-
+# Add to the substitutions
+rst_prolog = f"""
+.. |package_version| replace:: {release}
+"""
 
 # -- General configuration ---------------------------------------------------
 

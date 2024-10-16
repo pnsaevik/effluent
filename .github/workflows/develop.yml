@@ -1,0 +1,64 @@
+name: Development workflow
+
+on:
+  push: # Triggers on push to any branch
+  schedule:
+    - cron: '45 5 * * 1'  # Run every Monday at 05:45 UTC
+
+jobs:
+  run_pytest:
+    runs-on: ubuntu-latest
+    name: Run pytest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install package
+        run: pip install .
+      - name: "Command-line example"
+        run: effluent ./docs/source/examples/jet/config.toml && cat out.csv
+      - name: Install test suite
+        run: pip install pytest
+      - name: Run pytest
+        run: pytest
+
+  build_sphinx:
+    runs-on: ubuntu-latest
+    name: Build sphinx
+    needs: run_pytest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install package
+        run: pip install .
+      - name: Install documentation toolchain
+        run: pip install sphinx matplotlib sphinx-autoapi
+      - name: Build documentation
+        run: sphinx-build -v -b html -W --keep-going -n ./docs/source/ ./docs/build/
+      - name: Run sphinx doctest
+        run: sphinx-build -M doctest ./docs/source/ ./docs/build/
+      - name: Run sphinx linkcheck
+        run: sphinx-build -M linkcheck ./docs/source/ ./docs/build/
+      - name: Upload documentation
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/
+
+  deploy_sphinx:
+    needs: build_sphinx
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

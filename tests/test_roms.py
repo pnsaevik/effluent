@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import xarray as xr
 import pytest
+import pandas as pd
 
 
 FIXTURES_DIR = Path(__file__).parent.joinpath('fixtures')
@@ -56,18 +57,16 @@ class Test_load_location:
     def test_correct_profile_data_sorted_by_increasing_depth(self):
         dset = roms.load_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']
-        try:
-            df = dset[varnames].to_dataframe()
-
-        finally:
-            dset.close()
-
-        df = df.reset_index()
-        df = df[varnames]
-        txt = df.to_csv(index=False, float_format="%.02f", lineterminator='\n')
+        df = dset[varnames].to_dataframe().reset_index()[varnames]
 
         fname = FIXTURES_DIR / 'profile.csv'
-        with open(fname, encoding='utf-8') as fp:
-            expected = fp.read()
+        # df.to_csv(fname, index=False, lineterminator='\n')
+        expected = pd.read_csv(fname, converters=dict(time=np.datetime64))
 
-        assert txt == expected
+        # Assert that the difference is small
+        for colname in expected.columns:
+            assert colname in dset
+            diff = np.abs(expected[colname].values - df[colname].values)
+            if np.issubdtype(diff.dtype, np.timedelta64):
+                diff = diff / np.timedelta64(1, 's')
+            assert np.max(diff) < 1e-5

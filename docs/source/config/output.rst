@@ -36,6 +36,9 @@ can be used to limit the number of variables written.
     * ``w``: Mean velocity in *z* direction [s]
     * ``density``: Mean mass density [kg/m³]
     * ``radius``: Radius of top-hat profile [m]
+    * ``dilution``: The dilution factor of the effluent volume [1]
+    * ``salt``: Plume salinity, if available [1]
+    * ``temp``: Plume temperature, if available [°C]
 
 .. confval:: output.release.start
 

@@ -114,6 +114,7 @@ We can visualize the same data in a 3D plot:
     cmap = fig.colorbar(
         ScalarMappable(norm=data_norm, cmap='viridis_r'),
         shrink=.6,
+        ax=ax,
         label='Ambient density (kg/m3)',
         location='left',
     )

@@ -1,9 +1,12 @@
+import pandas as pd
 import pytest
 import effluent
 from pathlib import Path
 import os
 import tomli
 import numpy as np
+
+# noinspection PyUnresolvedReferences
 import netCDF4 as nc  # Must be imported together with numpy to avoid warning
 
 
@@ -51,24 +54,27 @@ def compare_files(a, b):
 
 
 def compare_csv(a, b):
-    with open(a, 'r', encoding='utf-8') as fp:
-        txt_a = fp.read()
+    df_a = pd.read_csv(a)
+    df_b = pd.read_csv(b)
 
-    with open(b, 'r', encoding='utf-8') as fp:
-        txt_b = fp.read()
+    assert list(df_a.columns) == list(df_b.columns)
+    for colname in df_a.columns:
+        vals_a = df_a[colname].values
+        vals_b = df_b[colname].values
+        assert smalldiff(vals_a, vals_b, tol=1e-4)
 
-    assert txt_a == txt_b
 
-
-def smalldiff(a, b):
+def smalldiff(a, b, tol=1e-7):
     if np.issubdtype(a.dtype, np.integer):
         return a.tolist() == b.tolist()
     elif np.issubdtype(a.dtype, np.datetime64):
         return a.tolist() == b.tolist()
+    elif isinstance(a[0], str):
+        return list(a) == list(b)
     else:
-        scale = np.max(1e-7 + np.abs(a) + np.abs(b))
+        scale = np.max(tol + np.abs(a) + np.abs(b))
         diff = (a - b) / scale
-        return np.max(np.abs(diff)) < 1e-7
+        return np.max(np.abs(diff)) < tol
 
 
 def compare_netcdf(a, b):

@@ -7,6 +7,8 @@
 Effluent: Pipe discharge model
 ==========================================
 
+Current version: |package_version|
+
 
 What is effluent?
 ===================

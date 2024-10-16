@@ -1,6 +1,4 @@
-[![CircleCI](
-https://circleci.com/gh/pnsaevik/effluent/tree/main.svg?style=shield)
-](https://circleci.com/gh/pnsaevik/effluent)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13929233.svg)](https://doi.org/10.5281/zenodo.13929233)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.05554/status.svg)](https://doi.org/10.21105/joss.05554)
 
 # effluent
