@@ -8,11 +8,13 @@ import scipy.integrate
 import effluent.io
 import xarray as xr
 import logging
+import typing
 from collections import namedtuple
 
 
 logger = logging.getLogger(__name__)
-SolverVars = namedtuple('SolverVars', ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius'])
+SolverVars = namedtuple('SolverVars', ['x', 'y', 'z', 'u', 'v', 'w', 'density', 'radius', 'tracers'])
+OdefuncVars = namedtuple('OdefunVars', ['ddt'])
 
 
 class Solver:
@@ -59,8 +61,14 @@ class Solver:
         self.stop = stop
         self.step = step
 
-        self._pipe = None
-        self._ambient = None
+        # Internal dataset to hold the initial conditions
+        self._pipe = xr.Dataset()
+
+        # Internal dataset to hold the ambient conditions
+        self._ambient = xr.Dataset()
+
+        # Internal namedtuple class that represents tracked tracers
+        self._tracer_dtype = namedtuple('Tracers', [])  # type: typing.Any
 
     def set_init(self, pipe: effluent.io.Pipe, time):
         """
@@ -92,6 +100,27 @@ class Solver:
             logger.error("Ambient conditions are not sorted by increasing depth")
             raise ValueError("Ambient conditions are not sorted by increasing depth")
 
+    def set_tracers(self, varnames: list[str]):
+        """
+        Set tracer variables
+
+        Tracers are variables whose value should be tracked during
+        simulation. Any intensive (i.e. concentration-like) variable
+        can be included, such as salinity, nitrogen concentration or even
+        temperature.
+
+        Mixing properties should be proportional to volume. For instance, if
+        two water volumes V1 and V2 are mixed, and their tracer amount is T1 and
+        T2, respectively, the mixed tracer amount should be
+        (T1 * V1 + T2 * V2) / (V1 + V2).
+
+        Variable names should match the variable names in the datasets for
+        initial and ambient conditions.
+
+        :param varnames: Names of variables to include
+        """
+        self._tracer_dtype = namedtuple('Tracers', list(varnames))
+
     def volume_change_ratio(self, t, y):
         """
         Compute the time derivative of log(V) according to :eq:`sol_voldef`.
@@ -102,14 +131,56 @@ class Solver:
         :param y: Tuple of primary variables: ``x``, ``y``, ``z``, ``u``, ``v``, ``w``, ``density``, ``radius``
         :return: Time derivative of log(V)
         """
-        _vars = self._compute_vars(t, y)
-        return _vars[0]
+        _ = t  # Silence warning about variable not used
 
-    def _compute_vars(self, t, y):
-        # Rename input variables
-        # noinspection PyUnusedLocal
-        t = t
-        sv = SolverVars(*y)
+        solver_vars = self._unpack(y)
+        _, ddt_log_V = self._odefunc(solver_vars)
+        return ddt_log_V
+
+    @staticmethod
+    def _pack(solver_vars: SolverVars) -> np.ndarray:
+        """
+        Pack a set of solver variables and tracer variables into an ODE array
+
+        :param solver_vars: A set of solver variables
+        :return: Numpy array to be fed into scipy ODE solver
+        """
+        primary_vars = list(solver_vars)[:-1]
+        tracer_vars = list(solver_vars.tracers)
+        return np.stack(primary_vars + tracer_vars)
+
+    @staticmethod
+    def _unpack(ode_array: np.ndarray) -> SolverVars:
+        """
+        Unpack an ODE array to solver variables and tracer variables
+
+        :param ode_array: A numpy array designed to work with scipy ODE solvers
+        :return: A set of solver variables
+        """
+        num_solver_vars = len(SolverVars._fields)
+        primary_vars = ode_array[:num_solver_vars]
+        tracer_vars = ode_array[num_solver_vars:]
+        solver_vars = SolverVars(*primary_vars, tracer_vars)
+        return solver_vars
+
+    def _odefunc(self, solver_vars: SolverVars) -> tuple[SolverVars, np.ndarray]:
+        """
+        ODE function to be used by the solver
+
+        The function implements the formulas described in :doc:`/algorithm`.
+        For enhanced readability, the function has annotated arrays (namedtuple
+        objects) as input and output. The function is wrapped by self.odefunc
+        which packages the input and output as numpy arrays to fit with scipy
+        solvers.
+
+        Output from this function includes time derivatives of all solver
+        variables as well as auxillary variables used for event detection
+
+        :param solver_vars: Solver variables as described in :doc:`/algorithm`.
+        :return: Tuple (odefunc_vars, ddt_log_V), where odefunc_vars are time
+            derivatives of solver variables and ddt_log_V is used for event
+            detection.
+        """
 
         # Define coefficients
         beta_t = self.beta_t          # Entrainment coefficient, co-flow
@@ -118,21 +189,27 @@ class Solver:
         K_n = 1 / (1 + self.mass_n)   # Added mass coefficient, normal gravity pull
         g = 9.81                      # Acceleration of gravity
 
+        # Extract variables
+        z = solver_vars.z
+        u = solver_vars.u
+        v = solver_vars.v
+        w = solver_vars.w
+
         # Extract ambient velocity and density
-        rho_a, u_a, v_a = self._ambient_data(sv.z)
+        rho_a, u_a, v_a = self._ambient_data(z)
 
         # Compute added mass coefficient
-        squared_horizontal_speed = sv.u * sv.u + sv.v * sv.v
-        w2 = sv.w * sv.w
+        squared_horizontal_speed = u*u + v*v
+        w2 = w*w
         squared_speed = squared_horizontal_speed + w2
         K = (K_n * squared_horizontal_speed + K_t * w2) / squared_speed
 
         # Compute flow difference in tangential and normal direction
-        delta_u = sv.u - u_a
-        delta_v = sv.v - v_a
+        delta_u = u - u_a
+        delta_v = v - v_a
         squared_excess_speed = delta_u*delta_u + delta_v*delta_v + w2
         speed = np.sqrt(squared_speed)
-        delta_u_t = np.abs(speed - (sv.u * u_a + sv.v * v_a) / speed)
+        delta_u_t = np.abs(speed - (u * u_a + v * v_a) / speed)
         sq_delta_u_n = squared_excess_speed - delta_u_t * delta_u_t
         delta_u_n = np.sqrt(np.maximum(0, sq_delta_u_n))
 
@@ -140,16 +217,41 @@ class Solver:
         ddt_R = beta_t * delta_u_t + beta_n * delta_u_n
 
         # Conservation of volume
-        ddt_log_R2 = 2 * ddt_R / sv.radius
-        rho_ratio = rho_a / sv.density
+        ddt_log_R2 = 2 * ddt_R / solver_vars.radius
+        rho_ratio = rho_a / solver_vars.density
         gravity_factor = K * (1 - rho_ratio) * g
-        nominator = ddt_log_R2 + gravity_factor * sv.w / squared_speed
-        denominator = rho_ratio * (1 - (sv.u * u_a + sv.v * v_a) / squared_speed) + 1
+        nominator = ddt_log_R2 + gravity_factor * w / squared_speed
+        denominator = rho_ratio * (1 - (u * u_a + v * v_a) / squared_speed) + 1
         ddt_log_V = nominator / denominator
 
-        return (
-            ddt_log_V, rho_a, sv.density, rho_ratio, delta_u, delta_v, sv.u,
-            sv.v, sv.w, gravity_factor, ddt_R)
+        # Conservation of mass
+        ddt_rho = ddt_log_V * (rho_a - solver_vars.density)
+
+        # Conservation of momentum
+        prefix = -ddt_log_V * rho_ratio
+        ddt_u = prefix * delta_u
+        ddt_v = prefix * delta_v
+        ddt_w = prefix * w + gravity_factor
+
+        # Displacement
+        ddt_x = u
+        ddt_y = v
+        ddt_z = w
+
+        # Assemble output values
+        odefunc_vars = SolverVars(
+            x=ddt_x,
+            y=ddt_y,
+            z=ddt_z,
+            u=ddt_u,
+            v=ddt_v,
+            w=ddt_w,
+            density=ddt_rho,
+            radius=ddt_R,
+            tracers=self._tracer_dtype(),
+        )
+
+        return odefunc_vars, ddt_log_V
 
     def solve(self) -> xr.Dataset:
         """
@@ -169,7 +271,9 @@ class Solver:
         """
         steps = np.arange(self.start, self.stop + 0.5 * self.step, self.step)
 
-        event = lambda t, y: self.volume_change_ratio(t, y)
+        def event(t, y):
+            return self.volume_change_ratio(t, y)
+
         event.terminal = True
         event.direction = -1
 
@@ -197,13 +301,25 @@ class Solver:
             res_y = np.concatenate([res_y, evt_y[0].T], axis=1)
 
         # Organize result
-        sv = SolverVars(*res_y)
-        data_vars = {k: xr.Variable('t', v) for k, v in sv._asdict().items()}
+        data_dict = self._unpack_to_dict(res_y)
+        data_vars = {k: xr.Variable('t', v) for k, v in data_dict.items()}
         data_vars['dilution'] = xr.Variable(
             data=self._dilution_factor(res_y),
             dims='t',
         )
         return xr.Dataset(data_vars=data_vars, coords=dict(t=res_t))
+
+    def _unpack_to_dict(self, y: np.ndarray) -> dict:
+        """
+        Convert an array of scipy ODE style into a dict of named variables
+
+        :param y: Array of scipy ODE style
+        :return: Dict of named variables
+        """
+        names = list(SolverVars._fields)[:-1]
+        # noinspection PyProtectedMember
+        names += list(self._tracer_dtype._fields)
+        return dict(zip(names, y))
 
     def _ambient_data(self, depth):
         amb = self._ambient
@@ -224,12 +340,20 @@ class Solver:
             w=pipe.w.values.item(),
             density=pipe.dens.values.item(),
             radius=0.5 * pipe.diam.values.item(),
+            tracers=self._tracer_dtype(),
         )
-        return np.array(init_values, 'f8')
+        return self._pack(init_values)
 
     def _dilution_factor(self, y_in):
-        sv0 = SolverVars(*self._initial_conditions())
-        sv1 = SolverVars(*y_in)
+        """
+        Compute dilution factor according to formula :eq:`voldef_prim` in
+        :doc:`/algorithm`.
+
+        :param y_in: Solver variables in scipy ODE format
+        :return: Dilution factor
+        """
+        sv0 = self._unpack(self._initial_conditions())
+        sv1 = self._unpack(y_in)
         dilution = (
             ((sv1.radius * sv1.radius) / (sv0.radius * sv0.radius)) *
             (np.sqrt(sv1.u * sv1.u + sv1.v * sv1.v + sv1.w * sv1.w) /
@@ -247,26 +371,9 @@ class Solver:
         :param y: Input vector of shape (n_vars, n_times)
         :return: Time derivative of the primary variables (n_vars, n_times)
         """
+        _ = t  # Silence warning about variable not used
 
-        _vars = self._compute_vars(t, y)
-        ddt_log_V, rho_a, rho, rho_ratio, delta_u, delta_v, u, v, w, gf, ddt_R = _vars
-
-        # Conservation of mass
-        ddt_rho = ddt_log_V * (rho_a - rho)
-
-        # Conservation of momentum
-        prefix = -ddt_log_V * rho_ratio
-        ddt_u = prefix * delta_u
-        ddt_v = prefix * delta_v
-        ddt_w = prefix * w + gf
-
-        # Displacement
-        ddt_x = u
-        ddt_y = v
-        ddt_z = w
-
-        ddt = SolverVars(
-            x=ddt_x, y=ddt_y, z=ddt_z, u=ddt_u, v=ddt_v, w=ddt_w,
-            density=ddt_rho, radius=ddt_R,
-        )
-        return np.stack(ddt)
+        solver_vars = self._unpack(y)
+        odefunc_vars, _ = self._odefunc(solver_vars)
+        ddt_y = self._pack(odefunc_vars)
+        return ddt_y
