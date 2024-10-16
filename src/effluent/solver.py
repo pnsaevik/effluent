@@ -37,12 +37,10 @@ class Solver:
     :param start: Time (in seconds) of first trajectory point
     :param stop: Time (in seconds) of last trajectory point
     :param step: Time (in seconds) between trajectory points
-    :param tracers: Name of tracer variables to track during simulation
     """
 
     def __init__(self, beta_n=0.34, beta_t=0.17, mass_n=1.0, mass_t=0.18, method="RK45",
-                 rtol=1e-3, atol=1e-6, first_step=0, max_step=0, start=0, stop=60,
-                 step=1, tracers=()):
+                 rtol=1e-3, atol=1e-6, first_step=0, max_step=0, start=0, stop=60, step=1):
         # Model parameters
         self.beta_n = beta_n
         self.beta_t = beta_t
@@ -68,7 +66,7 @@ class Solver:
         self._ambient = xr.Dataset()
 
         # Internal list of tracked tracer variables
-        self._tracers = tuple(tracers)
+        self._tracers = ('salt', 'temp')
 
     def set_init(self, pipe: effluent.io.Pipe, time):
         """
@@ -287,7 +285,11 @@ class Solver:
 
         # Organize result
         data_dict = self._unpack_to_dict(res_y)
-        data_vars = {k: xr.Variable('t', v) for k, v in data_dict.items()}
+        data_vars = {
+            k: xr.Variable('t', v) for k, v in data_dict.items()
+            # Ignore unavailable tracers
+            if k not in self._tracers or k in self._ambient or k in self._pipe
+        }
         data_vars['dilution'] = xr.Variable(
             data=self._dilution_factor(res_y),
             dims='t',
@@ -312,6 +314,7 @@ class Solver:
         u_a = np.interp(depth, depths, amb.u.values)
         v_a = np.interp(depth, depths, amb.v.values)
 
+        # Load tracer data, or replace with zero if missing
         t_a = {}
         for tracer_name in self._tracers:
             if tracer_name in amb.variables:
@@ -325,6 +328,14 @@ class Solver:
     def _initial_conditions(self):
         pipe = self._pipe
 
+        # Load tracer data, or replace with zero if missing
+        tracers = {}
+        for tracer_name in self._tracers:
+            if tracer_name in pipe.variables:
+                tracers[tracer_name] = pipe[tracer_name].values.item()
+            else:
+                tracers[tracer_name] = 0
+
         init_values = SolverVars(
             x=0,
             y=0,
@@ -334,7 +345,7 @@ class Solver:
             w=pipe.w.values.item(),
             density=pipe.dens.values.item(),
             radius=0.5 * pipe.diam.values.item(),
-            tracers={k: pipe[k].values.item() for k in self._tracers},
+            tracers=tracers,
         )
         return self._pack(init_values)
 

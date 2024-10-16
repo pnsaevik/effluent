@@ -5,6 +5,8 @@ from pathlib import Path
 import os
 import tomli
 import numpy as np
+
+# noinspection PyUnresolvedReferences
 import netCDF4 as nc  # Must be imported together with numpy to avoid warning
 
 

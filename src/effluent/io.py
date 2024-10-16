@@ -648,7 +648,7 @@ class AmbientRoms(Ambient):
                 az=self.azimuth,
             )
 
-            keep_vars = ['time', 'depth', 'u', 'v', 'dens']
+            keep_vars = ['time', 'depth', 'u', 'v', 'dens', 'salt', 'temp']
             drop_vars = [v for v in dset.variables if v not in keep_vars]
             dset = dset.drop_vars(drop_vars)
 
