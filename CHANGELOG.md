@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.5.0] - 2024-10-16
+### Added
+- Secondary variable "dilution" is now computed and outputted by default
+- Secondary variables "temp" and "salt" are now computed and outputted by
+  default, if they are available.
+
+
 ## [1.4.2] - 2024-05-10
 ### Changed
 - Example "stratified" now uses csv files for ambient and pipe properties
