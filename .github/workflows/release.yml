@@ -9,6 +9,8 @@ jobs:
   create_release_draft:
     name: Create GitHub release draft
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - name: Checkout
